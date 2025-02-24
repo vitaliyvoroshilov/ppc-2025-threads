@@ -10,6 +10,8 @@
 
 using namespace voroshilov_v_convex_hull_components_seq;
 
+namespace {
+
 std::vector<int> genBinVec(int size) {
   std::random_device dev;
   std::mt19937 gen(dev());
@@ -21,6 +23,8 @@ std::vector<int> genBinVec(int size) {
 
   return binVec;
 }
+
+}  // namespace
 
 TEST(voroshilov_v_convex_hull_components_seq, chc_pipeline_run) {
   std::vector<int> pixels = genBinVec(1'000'000);

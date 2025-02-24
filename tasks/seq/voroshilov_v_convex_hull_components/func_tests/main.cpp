@@ -11,6 +11,8 @@
 
 using namespace voroshilov_v_convex_hull_components_seq;
 
+namespace {
+
 bool validationTest(int height, int width, std::vector<int>& pixels) {
   int* pHeight = &height;
   int* pWidth = &width;
@@ -99,7 +101,7 @@ bool imageRunTest(std::string srcPath, std::string expPath) {
 
   // Draw hulls on source image:
   for (Hull hull : hulls) {
-    for (int i = 0; i < hull.pixels.size() - 1; i++) {
+    for (size_t i = 0; i < hull.pixels.size() - 1; i++) {
       cv::circle(srcImage, cv::Point(hull.pixels[i].x, hull.pixels[i].y), 2, cv::Scalar(0, 0, 255), cv::FILLED);
 
       cv::line(srcImage, cv::Point(hull.pixels[i].x, hull.pixels[i].y),
@@ -129,6 +131,7 @@ bool imageRunTest(std::string srcPath, std::string expPath) {
   }
 }
 #endif
+}  // namespace
 TEST(voroshilov_v_convex_hull_components_seq, simpleValidationTest) {
   std::vector<int> pixels = {0, 1, 0, 1, 1, 1, 0, 1, 0};
   int height = 0;
@@ -159,8 +162,8 @@ TEST(voroshilov_v_convex_hull_components_seq, simpleTest1Component) {
 
   ASSERT_EQ(resultHulls.size(), expectHulls.size());
 
-  for (int i = 0; i < resultHulls.size(); i++) {
-    for (int j = 0; j < resultHulls[i].pixels.size(); j++) {
+  for (size_t i = 0; i < resultHulls.size(); i++) {
+    for (size_t j = 0; j < resultHulls[i].pixels.size(); j++) {
       EXPECT_EQ(resultHulls[i].pixels[j], expectHulls[i].pixels[j]);
     }
   }
@@ -188,8 +191,8 @@ TEST(voroshilov_v_convex_hull_components_seq, simpleTest3Components) {
 
   ASSERT_EQ(resultHulls.size(), expectHulls.size());
 
-  for (int i = 0; i < resultHulls.size(); i++) {
-    for (int j = 0; j < resultHulls[i].pixels.size(); j++) {
+  for (size_t i = 0; i < resultHulls.size(); i++) {
+    for (size_t j = 0; j < resultHulls[i].pixels.size(); j++) {
       EXPECT_EQ(resultHulls[i].pixels[j], expectHulls[i].pixels[j]);
     }
   }
@@ -228,8 +231,8 @@ TEST(voroshilov_v_convex_hull_components_seq, simpleTest5Components) {
 
   ASSERT_EQ(resultHulls.size(), expectHulls.size());
 
-  for (int i = 0; i < resultHulls.size(); i++) {
-    for (int j = 0; j < resultHulls[i].pixels.size(); j++) {
+  for (size_t i = 0; i < resultHulls.size(); i++) {
+    for (size_t j = 0; j < resultHulls[i].pixels.size(); j++) {
       EXPECT_EQ(resultHulls[i].pixels[j], expectHulls[i].pixels[j]);
     }
   }
