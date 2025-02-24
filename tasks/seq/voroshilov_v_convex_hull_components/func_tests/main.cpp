@@ -146,7 +146,8 @@ TEST(voroshilov_v_convex_hull_components_seq, simpleTest0Components) {
   int width = 3;
   std::vector<Hull> resultHulls = simpleRunTest(height, width, pixels);
 
-  ASSERT_EQ(resultHulls.size(), 0);
+  size_t expSize = 0;
+  ASSERT_EQ(resultHulls.size(), expSize);
 }
 
 TEST(voroshilov_v_convex_hull_components_seq, simpleTest1Component) {
