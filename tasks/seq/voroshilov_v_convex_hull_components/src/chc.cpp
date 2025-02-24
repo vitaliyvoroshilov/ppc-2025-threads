@@ -1,5 +1,7 @@
 #include "../include/chc.hpp"
 
+#include <algorithm>
+#include <cmath>
 #include <stack>
 #include <vector>
 
@@ -14,6 +16,11 @@ Pixel::Pixel(int y_, int x_, int value_) {
   y = y_;
   x = x_;
   value = value_;
+}
+Pixel::Pixel(const Pixel& other) {
+  y = other.y;
+  x = other.x;
+  value = other.value;
 }
 Pixel& Pixel::operator=(const Pixel& other) {
   y = other.y;
@@ -44,9 +51,14 @@ Image::Image(int height_, int width_, std::vector<int> pixels_) {
 Image::Image(const Image& other) {
   height = other.height;
   width = other.width;
-  for (Pixel pixel : other.pixels) {
-    pixels.push_back(pixel);
-  }
+  pixels = other.pixels;
+}
+Image& Image::operator=(const Image& other) {
+  height = other.height;
+  width = other.width;
+  pixels = other.pixels;
+
+  return *this;
 }
 Pixel& Image::getPixel(int y, int x) { return pixels[y * width + x]; }
 std::vector<int> Image::getValues() const {
