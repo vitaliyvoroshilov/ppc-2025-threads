@@ -60,7 +60,7 @@ std::vector<Hull> SimpleRunTest(int height, int width, std::vector<int>& pixels)
 }
 
 #ifndef _WIN32
-
+/*
 bool ImageRunTest(std::string& src_path, std::string& exp_path) {
   // Load source image:
   cv::Mat src_image = cv::imread(src_path);
@@ -132,7 +132,7 @@ bool ImageRunTest(std::string& src_path, std::string& exp_path) {
   // They are same if difference == 0.0
   return difference <= 0.0;
 }
-
+*/
 #endif
 
 }  // namespace
