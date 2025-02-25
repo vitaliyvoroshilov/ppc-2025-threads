@@ -254,12 +254,14 @@ TEST(voroshilov_v_convex_hull_components_seq, imageTest0) {
   std::string src_path = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/0_image.png");
   std::string exp_path = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/0_expected.png");
 
+  cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }
-\ TEST(voroshilov_v_convex_hull_components_seq, imageTest0Incorrect) {
+TEST(voroshilov_v_convex_hull_components_seq, imageTest0Incorrect) {
   std::string src_path = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/0_image.png");
   std::string exp_path = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/0_incorrect.png");
 
+  cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
   ASSERT_FALSE(ImageRunTest(src_path, exp_path));
 }
 
@@ -267,6 +269,7 @@ TEST(voroshilov_v_convex_hull_components_seq, imageTest1) {
   std::string src_path = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/1_image.png");
   std::string exp_path = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/1_expected.png");
 
+  cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }
 
@@ -274,6 +277,7 @@ TEST(voroshilov_v_convex_hull_components_seq, imageTest2) {
   std::string src_path = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/2_image.png");
   std::string exp_path = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/2_expected.png");
 
+  cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }
 
@@ -281,6 +285,7 @@ TEST(voroshilov_v_convex_hull_components_seq, imageTest3) {
   std::string src_path = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/3_image.png");
   std::string exp_path = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/3_expected.png");
 
+  cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }
 
@@ -288,6 +293,7 @@ TEST(voroshilov_v_convex_hull_components_seq, imageTest4) {
   std::string src_path = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/4_image.png");
   std::string exp_path = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/4_expected.png");
 
+  cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }
 
@@ -295,6 +301,7 @@ TEST(voroshilov_v_convex_hull_components_seq, imageTest5) {
   std::string src_path = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/5_image.png");
   std::string exp_path = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/5_expected.png");
 
+  cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }
 
@@ -302,12 +309,14 @@ TEST(voroshilov_v_convex_hull_components_seq, imageTest6) {
   std::string src_path = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/6_image.png");
   std::string exp_path = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/6_expected.png");
 
+  cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }
 TEST(voroshilov_v_convex_hull_components_seq, imageTest7) {
   std::string src_path = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/7_image.png");
   std::string exp_path = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/7_expected.png");
 
+  cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }
 
