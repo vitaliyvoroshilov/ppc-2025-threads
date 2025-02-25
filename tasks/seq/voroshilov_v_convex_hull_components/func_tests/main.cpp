@@ -243,56 +243,56 @@ TEST(voroshilov_v_convex_hull_components_seq, simpleTest5Components) {
 #ifndef _WIN32
 TEST(voroshilov_v_convex_hull_components_seq, imageTest0) {
   std::string srcPath = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/0_image.png");
-  std::string expPath = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_componentsdata/0_expected.png");
+  std::string expPath = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/0_expected.png");
 
   ASSERT_TRUE(imageRunTest(srcPath, expPath));
 }
 
 TEST(voroshilov_v_convex_hull_components_seq, imageTest0Incorrect) {
-  std::string srcPath = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_componentsdata/0_image.png");
-  std::string expPath = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_componentsdata/0_incorrect.png");
+  std::string srcPath = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/0_image.png");
+  std::string expPath = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/0_incorrect.png");
 
   ASSERT_FALSE(imageRunTest(srcPath, expPath));
 }
 
 TEST(voroshilov_v_convex_hull_components_seq, imageTest1) {
   std::string srcPath = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/1_image.png");
-  std::string expPath = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_componentsdata/1_expected.png");
+  std::string expPath = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/1_expected.png");
 
   ASSERT_TRUE(imageRunTest(srcPath, expPath));
 }
 
 TEST(voroshilov_v_convex_hull_components_seq, imageTest2) {
   std::string srcPath = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/2_image.png");
-  std::string expPath = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_componentsdata/2_expected.png");
+  std::string expPath = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/2_expected.png");
 
   ASSERT_TRUE(imageRunTest(srcPath, expPath));
 }
 
 TEST(voroshilov_v_convex_hull_components_seq, imageTest3) {
   std::string srcPath = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/3_image.png");
-  std::string expPath = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_componentsdata/3_expected.png");
+  std::string expPath = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/3_expected.png");
 
   ASSERT_TRUE(imageRunTest(srcPath, expPath));
 }
 
 TEST(voroshilov_v_convex_hull_components_seq, imageTest4) {
   std::string srcPath = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/4_image.png");
-  std::string expPath = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_componentsdata/4_expected.png");
+  std::string expPath = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/4_expected.png");
 
   ASSERT_TRUE(imageRunTest(srcPath, expPath));
 }
 
 TEST(voroshilov_v_convex_hull_components_seq, imageTest5) {
   std::string srcPath = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/5_image.png");
-  std::string expPath = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_componentsdata/5_expected.png");
+  std::string expPath = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/5_expected.png");
 
   ASSERT_TRUE(imageRunTest(srcPath, expPath));
 }
 
 TEST(voroshilov_v_convex_hull_components_seq, imageTest6) {
   std::string srcPath = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/6_image.png");
-  std::string expPath = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_componentsdata/6_expected.png");
+  std::string expPath = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/6_expected.png");
 
   ASSERT_TRUE(imageRunTest(srcPath, expPath));
 }
