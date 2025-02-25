@@ -10,12 +10,12 @@ struct Pixel {
   int value;  // the pixel itself
 
   Pixel() = default;
-  Pixel(int y_, int x_);
-  Pixel(int y_, int x_, int value_);
+  Pixel(int yParam, int xParam);
+  Pixel(int yParam, int xParam, int valueParam);
   Pixel(const Pixel& other);
-  Pixel& operator=(const Pixel& other);
-  Pixel& operator=(const int value_);
-  bool operator==(const int value_) const;
+  Pixel& operator=(const Pixel& other) = default;
+  Pixel& operator=(int valueParam);
+  bool operator==(int valueParam) const;
   bool operator==(const Pixel& other) const;
   bool operator!=(const Pixel& other) const;
 };
@@ -26,24 +26,23 @@ struct Image {
   std::vector<Pixel> pixels;
 
   Image() = default;
-  Image(int height_, int width_, std::vector<int> pixels_);
+  Image(int hght, int wdth, std::vector<int> pxls);
   Image(const Image& other);
-  Image& operator=(const Image& other);
+  Image& operator=(const Image& other) = default;
   Pixel& getPixel(int y, int x);
-  std::vector<int> getValues() const;
 };
 
 struct Component {
   std::vector<Pixel> pixels;
 
-  void addPixel(Pixel pixel);
+  void addPixel(const Pixel& pixel);
 };
 
 struct LineSegment {
   Pixel a;
   Pixel b;
 
-  LineSegment(Pixel a_, Pixel b_);
+  LineSegment(Pixel aParam, Pixel bParam);
 };
 
 struct Hull {
@@ -52,11 +51,11 @@ struct Hull {
   Hull() = default;
 };
 
-Component depthComponentSearch(Pixel startPixel, Image* tmpImage, int index);
+Component depthComponentSearch(Pixel& startPixel, Image* tmpImage, int index);
 
-std::vector<Component> findComponents(Image image);
+std::vector<Component> findComponents(Image& image);
 
-int checkRotation(Pixel first, Pixel second, Pixel third);
+int checkRotation(Pixel& first, Pixel& second, Pixel& third);
 
 Pixel findLeftPixel(Component component);
 
