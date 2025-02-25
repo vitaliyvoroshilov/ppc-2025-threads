@@ -20,7 +20,7 @@ std::vector<int> GenBinVec(int size) {
   std::vector<int> bin_vec(size);
 
   for (int i = 0; i < size; i++) {
-    bin_vec[i] = gen() % 2;
+    bin_vec[i] = static_cast<int>(gen() % 2);
   }
 
   return bin_vec;

@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstddef>
 #include <stack>
 #include <vector>
 
@@ -70,13 +69,13 @@ Component voroshilov_v_convex_hull_components_seq::DepthComponentSearch(Pixel& s
     Pixel current_pixel = stack.top();
     stack.pop();
     for (int i = 0; i < 8; i++) {
-      int nextY = current_pixel.y + step_y[i];
-      int nextX = current_pixel.x + step_x[i];
-      if (nextY >= 0 && nextY < tmp_image->height && nextX >= 0 && nextX < tmp_image->width &&
-          tmp_image->GetPixel(nextY, nextX) == 1) {
-        stack.push(tmp_image->GetPixel(nextY, nextX));
-        tmp_image->GetPixel(nextY, nextX) = index;              // Mark neighbour pixel as visited
-        component.AddPixel(tmp_image->GetPixel(nextY, nextX));  // Add neighbour pixel to component
+      int next_y = current_pixel.y + step_y[i];
+      int next_x = current_pixel.x + step_x[i];
+      if (next_y >= 0 && next_y < tmp_image->height && next_x >= 0 && next_x < tmp_image->width &&
+          tmp_image->GetPixel(next_y, next_x) == 1) {
+        stack.push(tmp_image->GetPixel(next_y, next_x));
+        tmp_image->GetPixel(next_y, next_x) = index;              // Mark neighbour pixel as visited
+        component.AddPixel(tmp_image->GetPixel(next_y, next_x));  // Add neighbour pixel to component
       }
     }
   }
@@ -190,7 +189,7 @@ std::vector<Pixel> voroshilov_v_convex_hull_components_seq::QuickHull(Component 
     }
   }
 
-  std::reverse(hull.begin(), hull.end());
+  std::ranges::reverse(hull);
 
   return hull;
 }
@@ -208,7 +207,7 @@ std::vector<Hull> voroshilov_v_convex_hull_components_seq::QuickHullAll(std::vec
 std::vector<int> voroshilov_v_convex_hull_components_seq::PackHulls(std::vector<Hull>& hulls) {
   std::vector<int> packed;
   for (Hull& hull : hulls) {
-    packed.push_back(hull.pixels.size());
+    packed.push_back(static_cast<int>(hull.pixels.size()));
     for (Pixel& pixel : hull.pixels) {
       packed.push_back(pixel.y);
       packed.push_back(pixel.x);
