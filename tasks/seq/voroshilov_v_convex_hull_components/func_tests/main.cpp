@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #ifndef _WIN32
+#include <opencv2/core/utils/logger.hpp>
 #include <opencv2/opencv.hpp>
 #endif
 #include "core/task/include/task.hpp"
