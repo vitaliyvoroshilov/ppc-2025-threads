@@ -10,12 +10,12 @@ struct Pixel {
   int value;  // the pixel itself
 
   Pixel() = default;
-  Pixel(int yParam, int xParam);
-  Pixel(int yParam, int xParam, int valueParam);
+  Pixel(int y_param, int x_param);
+  Pixel(int y_param, int x_param, int value_param);
   Pixel(const Pixel& other);
   Pixel& operator=(const Pixel& other) = default;
-  Pixel& operator=(int valueParam);
-  bool operator==(int valueParam) const;
+  Pixel& operator=(int value_param);
+  bool operator==(int value_param) const;
   bool operator==(const Pixel& other) const;
   bool operator!=(const Pixel& other) const;
 };
@@ -29,20 +29,20 @@ struct Image {
   Image(int hght, int wdth, std::vector<int> pxls);
   Image(const Image& other);
   Image& operator=(const Image& other) = default;
-  Pixel& getPixel(int y, int x);
+  Pixel& GetPixel(int y, int x);
 };
 
 struct Component {
   std::vector<Pixel> pixels;
 
-  void addPixel(const Pixel& pixel);
+  void AddPixel(const Pixel& pixel);
 };
 
 struct LineSegment {
   Pixel a;
   Pixel b;
 
-  LineSegment(Pixel aParam, Pixel bParam);
+  LineSegment(Pixel& a_param, Pixel& b_param);
 };
 
 struct Hull {
@@ -51,24 +51,24 @@ struct Hull {
   Hull() = default;
 };
 
-Component depthComponentSearch(Pixel& startPixel, Image* tmpImage, int index);
+Component DepthComponentSearch(Pixel& start_pixel, Image* tmp_image, int index);
 
-std::vector<Component> findComponents(Image& image);
+std::vector<Component> FindComponents(Image& image);
 
-int checkRotation(Pixel& first, Pixel& second, Pixel& third);
+int CheckRotation(Pixel& first, Pixel& second, Pixel& third);
 
-Pixel findLeftPixel(Component component);
+Pixel FindLeftPixel(Component component);
 
-Pixel findRightPixel(Component component);
+Pixel FindRightPixel(Component component);
 
-Pixel findFarthestPixel(std::vector<Pixel>& pixels, LineSegment lineSegment);
+Pixel FindFarthestPixel(std::vector<Pixel>& pixels, LineSegment& line_segment);
 
-std::vector<Pixel> quickHull(Component component);
+std::vector<Pixel> QuickHull(Component component);
 
-std::vector<Hull> quickHullAll(std::vector<Component>& components);
+std::vector<Hull> QuickHullAll(std::vector<Component>& components);
 
-std::vector<int> packHulls(std::vector<Hull>& hulls);
+std::vector<int> PackHulls(std::vector<Hull>& hulls);
 
-std::vector<Hull> unpackHulls(std::vector<int>& packed, int length);
+std::vector<Hull> UnpackHulls(std::vector<int>& packed, int length);
 
 }  // namespace voroshilov_v_convex_hull_components_seq

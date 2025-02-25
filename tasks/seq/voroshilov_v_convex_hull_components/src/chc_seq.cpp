@@ -27,21 +27,21 @@ bool voroshilov_v_convex_hull_components_seq::ChcTaskSequential::PreProcessingIm
   std::copy(ptr, ptr + task_data->inputs_count[0], pixels.begin());
 
   Image image(height, width, pixels);
-  imageIn = image;
+  imageIn_ = image;
 
   return true;
 }
 
 bool voroshilov_v_convex_hull_components_seq::ChcTaskSequential::RunImpl() {
-  std::vector<Component> components = findComponents(imageIn);
+  std::vector<Component> components = FindComponents(imageIn_);
 
-  hullsOut = quickHullAll(components);
+  hullsOut_ = QuickHullAll(components);
 
   return true;
 }
 
 bool voroshilov_v_convex_hull_components_seq::ChcTaskSequential::PostProcessingImpl() {
-  std::vector<int> out = packHulls(hullsOut);
+  std::vector<int> out = PackHulls(hullsOut_);
 
   std::copy(out.begin(), out.end(), reinterpret_cast<int *>(task_data->outputs[0]));
   task_data->outputs_count[0] = out.size();

@@ -14,38 +14,39 @@ using namespace voroshilov_v_convex_hull_components_seq;
 
 namespace {
 
-std::vector<int> genBinVec(int size) {
+std::vector<int> GenBinVec(int size) {
   std::random_device dev;
   std::mt19937 gen(dev());
-  std::vector<int> binVec;
+  std::vector<int> bin_vec(size);
 
   for (int i = 0; i < size; i++) {
-    binVec.push_back(gen() % 2);
+    bin_vec[i] = gen() % 2;
   }
 
-  return binVec;
+  return bin_vec;
 }
 
 }  // namespace
 
 TEST(voroshilov_v_convex_hull_components_seq, chc_pipeline_run) {
-  std::vector<int> pixels = genBinVec(1'000'000);
+  std::vector<int> pixels = GenBinVec(1'000'000);
   int height = 1'000;
   int width = 1'000;
 
-  int* pHeight = &height;
-  int* pWidth = &width;
+  int* p_height = &height;
+  int* p_width = &width;
   std::vector<int> out(1'000'000);
 
   auto task_data_seq = std::make_shared<ppc::core::TaskData>();
-  task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(pHeight));
-  task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(pWidth));
+  task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
+  task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_width));
   task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(pixels.data()));
   task_data_seq->inputs_count.emplace_back(pixels.size());
   task_data_seq->outputs.emplace_back(reinterpret_cast<uint8_t*>(out.data()));
   task_data_seq->outputs_count.emplace_back(0);
 
-  auto chcTaskSequential = std::make_shared<voroshilov_v_convex_hull_components_seq::ChcTaskSequential>(task_data_seq);
+  auto chc_task_sequential =
+      std::make_shared<voroshilov_v_convex_hull_components_seq::ChcTaskSequential>(task_data_seq);
 
   auto perf_attr = std::make_shared<ppc::core::PerfAttr>();
   perf_attr->num_running = 10;
@@ -58,29 +59,30 @@ TEST(voroshilov_v_convex_hull_components_seq, chc_pipeline_run) {
 
   auto perf_results = std::make_shared<ppc::core::PerfResults>();
 
-  auto perf_analyzer = std::make_shared<ppc::core::Perf>(chcTaskSequential);
+  auto perf_analyzer = std::make_shared<ppc::core::Perf>(chc_task_sequential);
   perf_analyzer->PipelineRun(perf_attr, perf_results);
   ppc::core::Perf::PrintPerfStatistic(perf_results);
 }
 
 TEST(voroshilov_v_convex_hull_components_seq, chc_task_run) {
-  std::vector<int> pixels = genBinVec(1'000'000);
+  std::vector<int> pixels = GenBinVec(1'000'000);
   int height = 1'000;
   int width = 1'000;
 
-  int* pHeight = &height;
-  int* pWidth = &width;
+  int* p_height = &height;
+  int* p_width = &width;
   std::vector<int> out(1'000'000);
 
   auto task_data_seq = std::make_shared<ppc::core::TaskData>();
-  task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(pHeight));
-  task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(pWidth));
+  task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
+  task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_width));
   task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(pixels.data()));
   task_data_seq->inputs_count.emplace_back(pixels.size());
   task_data_seq->outputs.emplace_back(reinterpret_cast<uint8_t*>(out.data()));
   task_data_seq->outputs_count.emplace_back(0);
 
-  auto chcTaskSequential = std::make_shared<voroshilov_v_convex_hull_components_seq::ChcTaskSequential>(task_data_seq);
+  auto chc_task_sequential =
+      std::make_shared<voroshilov_v_convex_hull_components_seq::ChcTaskSequential>(task_data_seq);
 
   auto perf_attr = std::make_shared<ppc::core::PerfAttr>();
   perf_attr->num_running = 10;
@@ -93,7 +95,7 @@ TEST(voroshilov_v_convex_hull_components_seq, chc_task_run) {
 
   auto perf_results = std::make_shared<ppc::core::PerfResults>();
 
-  auto perf_analyzer = std::make_shared<ppc::core::Perf>(chcTaskSequential);
+  auto perf_analyzer = std::make_shared<ppc::core::Perf>(chc_task_sequential);
   perf_analyzer->TaskRun(perf_attr, perf_results);
   ppc::core::Perf::PrintPerfStatistic(perf_results);
 }

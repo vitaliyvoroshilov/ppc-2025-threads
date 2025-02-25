@@ -16,8 +16,8 @@ class ChcTaskSequential : public ppc::core::Task {
   bool PostProcessingImpl() override;
 
  private:
-  Image imageIn;
-  std::vector<Hull> hullsOut;
+  Image imageIn_;
+  std::vector<Hull> hullsOut_;
 };
 
 }  // namespace voroshilov_v_convex_hull_components_seq
