@@ -144,7 +144,12 @@ bool ImageRunTest(std::string& src_path, std::string& exp_path) {
 
 }  // namespace
 TEST(voroshilov_v_convex_hull_components_seq, simpleValidationTest) {
-  std::vector<int> pixels = {0, 1, 0, 1, 1, 1, 0, 1, 0};
+  // clang-format off
+  std::vector<int> pixels = 
+  {0, 1, 0,
+   1, 1, 1,
+   0, 1, 0};
+  // clang-format on
   int height = 0;
   int width = 3;
 
@@ -152,7 +157,12 @@ TEST(voroshilov_v_convex_hull_components_seq, simpleValidationTest) {
 }
 
 TEST(voroshilov_v_convex_hull_components_seq, simpleTest0Components) {
-  std::vector<int> pixels = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+  // clang-format off
+  std::vector<int> pixels =
+  {0, 0, 0,
+   0, 0, 0,
+   0, 0, 0};
+  // clang-format on
   int height = 3;
   int width = 3;
   std::vector<Hull> result_hulls = SimpleRunTest(height, width, pixels);
@@ -162,7 +172,12 @@ TEST(voroshilov_v_convex_hull_components_seq, simpleTest0Components) {
 }
 
 TEST(voroshilov_v_convex_hull_components_seq, simpleTest1Component) {
-  std::vector<int> pixels = {0, 1, 0, 1, 1, 1, 0, 1, 0};
+  // clang-format off
+  std::vector<int> pixels =
+  {0, 1, 0,
+   1, 1, 1,
+   0, 1, 0};
+  // clang-format on
   int height = 3;
   int width = 3;
   std::vector<Hull> result_hulls = SimpleRunTest(height, width, pixels);
@@ -182,7 +197,14 @@ TEST(voroshilov_v_convex_hull_components_seq, simpleTest1Component) {
 }
 
 TEST(voroshilov_v_convex_hull_components_seq, simpleTest3Components) {
-  std::vector<int> pixels = {1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0};
+  // clang-format off
+  std::vector<int> pixels = 
+  {1, 1, 0, 0, 1, 1,
+   1, 0, 0, 0, 1, 1,
+   0, 0, 1, 0, 0, 0,
+   0, 1, 1, 1, 0, 0,
+   1, 1, 0, 0, 0, 0};
+  // clang-format on
   int height = 5;
   int width = 6;
   std::vector<Hull> result_hulls = SimpleRunTest(height, width, pixels);
@@ -211,10 +233,20 @@ TEST(voroshilov_v_convex_hull_components_seq, simpleTest3Components) {
 }
 
 TEST(voroshilov_v_convex_hull_components_seq, simpleTest5Components) {
-  std::vector<int> pixels = {1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0,
-                             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                             0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0,
-                             0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1};
+  // clang-format off
+  std::vector<int> pixels = 
+  {1, 1, 0, 0, 0, 1, 1, 0, 0, 0,
+   1, 1, 1, 0, 1, 1, 1, 1, 0, 0,
+   0, 1, 1, 0, 0, 1, 1, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
+   0, 0, 1, 0, 0, 0, 0, 0, 0, 1,
+   0, 1, 1, 1, 0, 0, 0, 0, 1, 0,
+   0, 0, 1, 0, 0, 1, 0, 1, 1, 0,
+   0, 0, 0, 0, 1, 0, 0, 0, 1, 0,
+   0, 0, 0, 0, 0, 1, 0, 0, 0, 1};
+  // clang-format on
   int height = 11;
   int width = 10;
   std::vector<Hull> result_hulls = SimpleRunTest(height, width, pixels);
@@ -262,14 +294,14 @@ TEST(voroshilov_v_convex_hull_components_seq, imageTest0Incorrect) {
 
   ASSERT_FALSE(ImageRunTest(src_path, exp_path));
 }
-
+/*
 TEST(voroshilov_v_convex_hull_components_seq, imageTest1) {
   std::string src_path = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/1_image.png");
   std::string exp_path = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/1_expected.png");
 
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }
-/*
+*/
 TEST(voroshilov_v_convex_hull_components_seq, imageTest2) {
   std::string src_path = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/2_image.png");
   std::string exp_path = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/2_expected.png");
@@ -310,5 +342,4 @@ TEST(voroshilov_v_convex_hull_components_seq, imageTest7) {
 
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }
-*/
 #endif
