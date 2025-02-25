@@ -43,7 +43,7 @@ bool voroshilov_v_convex_hull_components_seq::ChcTaskSequential::RunImpl() {
 bool voroshilov_v_convex_hull_components_seq::ChcTaskSequential::PostProcessingImpl() {
   std::vector<int> out = PackHulls(hullsOut_);
 
-  std::ranges::copy(out.data(), reinterpret_cast<int *>(task_data->outputs[0]));
+  std::ranges::copy(out, reinterpret_cast<int *>(task_data->outputs[0]));
   task_data->outputs_count[0] = out.size();
 
   return true;
