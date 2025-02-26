@@ -295,7 +295,7 @@ TEST(voroshilov_v_convex_hull_components_seq, imageTest0Incorrect) {
 
   ASSERT_FALSE(ImageRunTest(src_path, exp_path));
 }
-/*
+
 TEST(voroshilov_v_convex_hull_components_seq, imageTest1) {
   std::string src_path = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/1_image.png");
   std::string exp_path = ppc::util::GetAbsolutePath("seq/voroshilov_v_convex_hull_components/data/1_expected.png");
