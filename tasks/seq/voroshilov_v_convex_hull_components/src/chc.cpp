@@ -188,7 +188,6 @@ std::vector<Pixel> voroshilov_v_convex_hull_components_seq::QuickHull(Component 
       stack.push(new_line2);
     }
   }
-
   std::ranges::reverse(hull);
 
   return hull;
