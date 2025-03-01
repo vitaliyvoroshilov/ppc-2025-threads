@@ -9,7 +9,6 @@ using namespace voroshilov_v_convex_hull_components_seq;
 
 Pixel::Pixel(int y_param, int x_param) : y(y_param), x(x_param), value(0) {}
 Pixel::Pixel(int y_param, int x_param, int value_param) : y(y_param), x(x_param), value(value_param) {}
-Pixel::Pixel(const Pixel& other) : y(other.y), x(other.x), value(other.value) {}
 
 bool Pixel::operator==(const int value_param) const { return value == value_param; }
 bool Pixel::operator==(const Pixel& other) const { return (y == other.y) && (x == other.x); }
@@ -25,7 +24,6 @@ Image::Image(int hght, int wdth, std::vector<int> pxls) {
     }
   }
 }
-Image::Image(const Image& other) : height(other.height), width(other.width), pixels(other.pixels) {}
 
 Pixel& Image::GetPixel(int y, int x) { return pixels[(y * width) + x]; }
 

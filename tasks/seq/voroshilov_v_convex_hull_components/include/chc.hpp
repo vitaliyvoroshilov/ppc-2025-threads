@@ -12,7 +12,7 @@ struct Pixel {
   Pixel() = default;
   Pixel(int y_param, int x_param);
   Pixel(int y_param, int x_param, int value_param);
-  Pixel(const Pixel& other);
+  Pixel(const Pixel& other) = default;
 
   Pixel& operator=(const Pixel& other) = default;
   bool operator==(int value_param) const;
@@ -27,7 +27,7 @@ struct Image {
 
   Image() = default;
   Image(int hght, int wdth, std::vector<int> pxls);
-  Image(const Image& other);
+  Image(const Image& other) = default;
   Image& operator=(const Image& other) = default;
   Pixel& GetPixel(int y, int x);
 };
