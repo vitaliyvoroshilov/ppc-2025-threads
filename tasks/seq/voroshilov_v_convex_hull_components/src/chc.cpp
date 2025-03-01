@@ -7,29 +7,11 @@
 
 using namespace voroshilov_v_convex_hull_components_seq;
 
-Pixel::Pixel(int y_param, int x_param) {
-  y = y_param;
-  x = x_param;
-  value = 0;
-}
-Pixel::Pixel(int y_param, int x_param, int value_param) {
-  y = y_param;
-  x = x_param;
-  value = value_param;
-}
-Pixel::Pixel(const Pixel& other) {
-  y = other.y;
-  x = other.x;
-  value = other.value;
-}
-Pixel& Pixel::operator=(const int value_param) {
-  value = value_param;
+Pixel::Pixel(int y_param, int x_param) : y(y_param), x(x_param), value(0) {}
+Pixel::Pixel(int y_param, int x_param, int value_param) : y(y_param), x(x_param), value(value_param) {}
 
-  return *this;
-}
 bool Pixel::operator==(const int value_param) const { return value == value_param; }
 bool Pixel::operator==(const Pixel& other) const { return (y == other.y) && (x == other.x); }
-bool Pixel::operator!=(const Pixel& other) const { return !(this == &other); }
 
 Image::Image(int hght, int wdth, std::vector<int> pxls) {
   height = hght;
@@ -41,19 +23,12 @@ Image::Image(int hght, int wdth, std::vector<int> pxls) {
     }
   }
 }
-Image::Image(const Image& other) {
-  height = other.height;
-  width = other.width;
-  pixels = other.pixels;
-}
+
 Pixel& Image::GetPixel(int y, int x) { return pixels[(y * width) + x]; }
 
 void Component::AddPixel(const Pixel& pixel) { pixels.push_back(pixel); }
 
-LineSegment::LineSegment(Pixel& a_param, Pixel& b_param) {
-  a = a_param;
-  b = b_param;
-}
+LineSegment::LineSegment(Pixel& a_param, Pixel& b_param) : a(a_param), b(b_param) {}
 
 Component voroshilov_v_convex_hull_components_seq::DepthComponentSearch(Pixel& start_pixel, Image* tmp_image,
                                                                         int index) {
@@ -62,7 +37,7 @@ Component voroshilov_v_convex_hull_components_seq::DepthComponentSearch(Pixel& s
   std::stack<Pixel> stack;
   Component component;
   stack.push(start_pixel);
-  tmp_image->GetPixel(start_pixel.y, start_pixel.x) = index;              // Mark start pixel as visited
+  tmp_image->GetPixel(start_pixel.y, start_pixel.x).value = index;        // Mark start pixel as visited
   component.AddPixel(tmp_image->GetPixel(start_pixel.y, start_pixel.x));  // Add start pixel to component
 
   while (!stack.empty()) {
@@ -74,7 +49,7 @@ Component voroshilov_v_convex_hull_components_seq::DepthComponentSearch(Pixel& s
       if (next_y >= 0 && next_y < tmp_image->height && next_x >= 0 && next_x < tmp_image->width &&
           tmp_image->GetPixel(next_y, next_x) == 1) {
         stack.push(tmp_image->GetPixel(next_y, next_x));
-        tmp_image->GetPixel(next_y, next_x) = index;              // Mark neighbour pixel as visited
+        tmp_image->GetPixel(next_y, next_x).value = index;        // Mark neighbour pixel as visited
         component.AddPixel(tmp_image->GetPixel(next_y, next_x));  // Add neighbour pixel to component
       }
     }
@@ -96,44 +71,14 @@ std::vector<Component> voroshilov_v_convex_hull_components_seq::FindComponents(I
       }
     }
   }
+  if (components.empty()) {
+    return {};
+  }
   return components;
 }
 
 int voroshilov_v_convex_hull_components_seq::CheckRotation(Pixel& first, Pixel& second, Pixel& third) {
-  int rotation = ((second.x - first.x) * (third.y - second.y)) - ((second.y - first.y) * (third.x - second.x));
-
-  int res = 0;
-  if (rotation < 0) {
-    res = 1;  // left rotation
-  } else {
-    if (rotation > 0) {
-      res = -1;  // right rotation
-    }
-  }
-
-  return res;
-}
-
-Pixel voroshilov_v_convex_hull_components_seq::FindLeftPixel(Component component) {
-  Pixel left = component.pixels[0];
-
-  for (Pixel& pixel : component.pixels) {
-    if (pixel.x < left.x) {
-      left = pixel;
-    }
-  }
-  return left;
-}
-
-Pixel voroshilov_v_convex_hull_components_seq::FindRightPixel(Component component) {
-  Pixel right = component.pixels[0];
-
-  for (Pixel& pixel : component.pixels) {
-    if (pixel.x > right.x) {
-      right = pixel;
-    }
-  }
-  return right;
+  return ((second.x - first.x) * (third.y - second.y)) - ((second.y - first.y) * (third.x - second.x));
 }
 
 Pixel voroshilov_v_convex_hull_components_seq::FindFarthestPixel(std::vector<Pixel>& pixels,
@@ -144,7 +89,7 @@ Pixel voroshilov_v_convex_hull_components_seq::FindFarthestPixel(std::vector<Pix
   for (Pixel& c : pixels) {
     Pixel a = line_segment.a;
     Pixel b = line_segment.b;
-    if (CheckRotation(a, b, c) == 1) {  // left rotation
+    if (CheckRotation(a, b, c) < 0) {  // left rotation
       double distance = std::abs(((b.x - a.x) * (a.y - c.y)) - ((a.x - c.x) * (b.y - a.y)));
       if (distance > max_dist) {
         max_dist = distance;
@@ -156,13 +101,22 @@ Pixel voroshilov_v_convex_hull_components_seq::FindFarthestPixel(std::vector<Pix
   return farthest_pixel;
 }
 
-std::vector<Pixel> voroshilov_v_convex_hull_components_seq::QuickHull(Component component) {
+std::vector<Pixel> voroshilov_v_convex_hull_components_seq::QuickHull(Component& component) {
   if (component.pixels.size() < 3) {
     return component.pixels;
   }
 
-  Pixel left = FindLeftPixel(component);
-  Pixel right = FindRightPixel(component);
+  Pixel left = component.pixels[0];
+  Pixel right = component.pixels[0];
+
+  for (Pixel& pixel : component.pixels) {
+    if (pixel.x < left.x) {
+      left = pixel;
+    }
+    if (pixel.x > right.x) {
+      right = pixel;
+    }
+  }
 
   std::vector<Pixel> hull;
   std::stack<LineSegment> stack;
@@ -194,6 +148,9 @@ std::vector<Pixel> voroshilov_v_convex_hull_components_seq::QuickHull(Component 
 }
 
 std::vector<Hull> voroshilov_v_convex_hull_components_seq::QuickHullAll(std::vector<Component>& components) {
+  if (components.empty()) {
+    return {};
+  }
   std::vector<Hull> hulls;
   for (Component& component : components) {
     Hull hull;
@@ -204,6 +161,10 @@ std::vector<Hull> voroshilov_v_convex_hull_components_seq::QuickHullAll(std::vec
 }
 
 std::vector<int> voroshilov_v_convex_hull_components_seq::PackHulls(std::vector<Hull>& hulls) {
+  if (hulls.empty()) {
+    return {};
+  }
+
   std::vector<int> packed;
   for (Hull& hull : hulls) {
     packed.push_back(static_cast<int>(hull.pixels.size()));
@@ -217,6 +178,10 @@ std::vector<int> voroshilov_v_convex_hull_components_seq::PackHulls(std::vector<
 }
 
 std::vector<Hull> voroshilov_v_convex_hull_components_seq::UnpackHulls(std::vector<int>& packed, int length) {
+  if (packed.empty() || length == 0) {
+    return {};
+  }
+
   std::vector<Hull> hulls;
   int i = 0;
   while (i < length) {
