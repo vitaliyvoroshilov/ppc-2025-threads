@@ -91,8 +91,8 @@ bool ImageRunTest(std::string& src_path, std::string& exp_path) {
   int* p_height = &bin_image.rows;
   int* p_width = &bin_image.cols;
   // std::vector<int> out(100);
-  std::vector<int> hulls_indexes_out(height * width);
-  std::vector<int> pixels_indexes_out(height * width);
+  std::vector<int> hulls_indexes_out(bin_image.cols * bin_image.rows);
+  std::vector<int> pixels_indexes_out(bin_image.cols * bin_image.rows);
 
   auto task_data_seq = std::make_shared<ppc::core::TaskData>();
   task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
