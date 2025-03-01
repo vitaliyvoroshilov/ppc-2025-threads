@@ -12,11 +12,8 @@ Pixel::Pixel(int y_param, int x_param) {
   x = x_param;
   value = 0;
 }
-Pixel::Pixel(int y_param, int x_param, int value_param) {
-  y = y_param;
-  x = x_param;
-  value = value_param;
-}
+Pixel::Pixel(int y_param, int x_param, int value_param) : y(y_param), x(x_param), value(value_param) {}
+
 Pixel::Pixel(const Pixel& other) {
   y = other.y;
   x = other.x;

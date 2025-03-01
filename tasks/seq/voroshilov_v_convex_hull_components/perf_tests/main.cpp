@@ -29,13 +29,13 @@ std::vector<int> GenBinVec(int size) {
 }  // namespace
 
 TEST(voroshilov_v_convex_hull_components_seq, chc_pipeline_run) {
-  std::vector<int> pixels = GenBinVec(1'000'000);
-  int height = 1'000;
+  std::vector<int> pixels = GenBinVec(10'000'000);
+  int height = 10'000;
   int width = 1'000;
 
   int* p_height = &height;
   int* p_width = &width;
-  std::vector<int> out(1'000'000);
+  std::vector<int> out(10'000'000);
 
   auto task_data_seq = std::make_shared<ppc::core::TaskData>();
   task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
@@ -65,13 +65,13 @@ TEST(voroshilov_v_convex_hull_components_seq, chc_pipeline_run) {
 }
 
 TEST(voroshilov_v_convex_hull_components_seq, chc_task_run) {
-  std::vector<int> pixels = GenBinVec(1'000'000);
-  int height = 1'000;
+  std::vector<int> pixels = GenBinVec(10'000'000);
+  int height = 10'000;
   int width = 1'000;
 
   int* p_height = &height;
   int* p_width = &width;
-  std::vector<int> out(1'000'000);
+  std::vector<int> out(10'000'000);
 
   auto task_data_seq = std::make_shared<ppc::core::TaskData>();
   task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
