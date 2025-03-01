@@ -57,13 +57,13 @@ std::vector<Component> FindComponents(Image& image);
 
 int CheckRotation(Pixel& first, Pixel& second, Pixel& third);
 
-Pixel FindLeftPixel(Component component);
+Pixel FindLeftPixel(Component& component);
 
-Pixel FindRightPixel(Component component);
+Pixel FindRightPixel(Component& component);
 
 Pixel FindFarthestPixel(std::vector<Pixel>& pixels, LineSegment& line_segment);
 
-std::vector<Pixel> QuickHull(Component component);
+std::vector<Pixel> QuickHull(Component& component);
 
 std::vector<Hull> QuickHullAll(std::vector<Component>& components);
 

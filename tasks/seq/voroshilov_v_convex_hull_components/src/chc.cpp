@@ -81,41 +81,37 @@ int voroshilov_v_convex_hull_components_seq::CheckRotation(Pixel& first, Pixel& 
   int res = 0;
   if (rotation < 0) {
     res = 1;  // left rotation
-  } else {
-    if (rotation != 0) {
-      res = -1;  // right rotation
-    }
   }
 
   return res;
 }
 
-Pixel voroshilov_v_convex_hull_components_seq::FindLeftPixel(Component component) {
+Pixel voroshilov_v_convex_hull_components_seq::FindLeftPixel(Component& component) {
   if (component.pixels.empty()) {
     return {};
-  } else {
-    Pixel left = component.pixels[0];
-    for (Pixel& pixel : component.pixels) {
-      if (pixel.x < left.x) {
-        left = pixel;
-      }
-    }
-    return left;
   }
+
+  Pixel left = component.pixels[0];
+  for (Pixel& pixel : component.pixels) {
+    if (pixel.x < left.x) {
+      left = pixel;
+    }
+  }
+  return left;
 }
 
-Pixel voroshilov_v_convex_hull_components_seq::FindRightPixel(Component component) {
+Pixel voroshilov_v_convex_hull_components_seq::FindRightPixel(Component& component) {
   if (component.pixels.empty()) {
     return {};
-  } else {
-    Pixel right = component.pixels[0];
-    for (Pixel& pixel : component.pixels) {
-      if (pixel.x > right.x) {
-        right = pixel;
-      }
-    }
-    return right;
   }
+
+  Pixel right = component.pixels[0];
+  for (Pixel& pixel : component.pixels) {
+    if (pixel.x > right.x) {
+      right = pixel;
+    }
+  }
+  return right;
 }
 
 Pixel voroshilov_v_convex_hull_components_seq::FindFarthestPixel(std::vector<Pixel>& pixels,
@@ -138,7 +134,7 @@ Pixel voroshilov_v_convex_hull_components_seq::FindFarthestPixel(std::vector<Pix
   return farthest_pixel;
 }
 
-std::vector<Pixel> voroshilov_v_convex_hull_components_seq::QuickHull(Component component) {
+std::vector<Pixel> voroshilov_v_convex_hull_components_seq::QuickHull(Component& component) {
   if (component.pixels.size() < 3) {
     return component.pixels;
   }
