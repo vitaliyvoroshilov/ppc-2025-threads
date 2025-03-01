@@ -12,7 +12,6 @@ Pixel::Pixel(int y_param, int x_param, int value_param) : y(y_param), x(x_param)
 
 bool Pixel::operator==(const int value_param) const { return value == value_param; }
 bool Pixel::operator==(const Pixel& other) const { return (y == other.y) && (x == other.x); }
-// bool Pixel::operator!=(const Pixel& other) const { return !(this == &other); }
 
 Image::Image(int hght, int wdth, std::vector<int> pxls) {
   height = hght;
@@ -72,46 +71,14 @@ std::vector<Component> voroshilov_v_convex_hull_components_seq::FindComponents(I
       }
     }
   }
+  if (components.empty()) {
+    return {};
+  }
   return components;
 }
 
 int voroshilov_v_convex_hull_components_seq::CheckRotation(Pixel& first, Pixel& second, Pixel& third) {
-  int rotation = ((second.x - first.x) * (third.y - second.y)) - ((second.y - first.y) * (third.x - second.x));
-
-  int res = 0;
-  if (rotation < 0) {
-    res = 1;  // left rotation
-  }
-
-  return res;
-}
-
-Pixel voroshilov_v_convex_hull_components_seq::FindLeftPixel(Component& component) {
-  if (component.pixels.empty()) {
-    return {};
-  }
-
-  Pixel left = component.pixels[0];
-  for (Pixel& pixel : component.pixels) {
-    if (pixel.x < left.x) {
-      left = pixel;
-    }
-  }
-  return left;
-}
-
-Pixel voroshilov_v_convex_hull_components_seq::FindRightPixel(Component& component) {
-  if (component.pixels.empty()) {
-    return {};
-  }
-
-  Pixel right = component.pixels[0];
-  for (Pixel& pixel : component.pixels) {
-    if (pixel.x > right.x) {
-      right = pixel;
-    }
-  }
-  return right;
+  return ((second.x - first.x) * (third.y - second.y)) - ((second.y - first.y) * (third.x - second.x));
 }
 
 Pixel voroshilov_v_convex_hull_components_seq::FindFarthestPixel(std::vector<Pixel>& pixels,
@@ -122,7 +89,7 @@ Pixel voroshilov_v_convex_hull_components_seq::FindFarthestPixel(std::vector<Pix
   for (Pixel& c : pixels) {
     Pixel a = line_segment.a;
     Pixel b = line_segment.b;
-    if (CheckRotation(a, b, c) == 1) {  // left rotation
+    if (CheckRotation(a, b, c) < 0) {  // left rotation
       double distance = std::abs(((b.x - a.x) * (a.y - c.y)) - ((a.x - c.x) * (b.y - a.y)));
       if (distance > max_dist) {
         max_dist = distance;
@@ -139,8 +106,17 @@ std::vector<Pixel> voroshilov_v_convex_hull_components_seq::QuickHull(Component&
     return component.pixels;
   }
 
-  Pixel left = FindLeftPixel(component);
-  Pixel right = FindRightPixel(component);
+  Pixel left = component.pixels[0];
+  Pixel right = component.pixels[0];
+
+  for (Pixel& pixel : component.pixels) {
+    if (pixel.x < left.x) {
+      left = pixel;
+    }
+    if (pixel.x > right.x) {
+      right = pixel;
+    }
+  }
 
   std::vector<Pixel> hull;
   std::stack<LineSegment> stack;

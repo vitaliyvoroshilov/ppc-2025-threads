@@ -17,7 +17,6 @@ struct Pixel {
   Pixel& operator=(const Pixel& other) = default;
   bool operator==(int value_param) const;
   bool operator==(const Pixel& other) const;
-  // bool operator!=(const Pixel& other) const;
 };
 
 struct Image {
@@ -56,10 +55,6 @@ Component DepthComponentSearch(Pixel& start_pixel, Image* tmp_image, int index);
 std::vector<Component> FindComponents(Image& image);
 
 int CheckRotation(Pixel& first, Pixel& second, Pixel& third);
-
-Pixel FindLeftPixel(Component& component);
-
-Pixel FindRightPixel(Component& component);
 
 Pixel FindFarthestPixel(std::vector<Pixel>& pixels, LineSegment& line_segment);
 
