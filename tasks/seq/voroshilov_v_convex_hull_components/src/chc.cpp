@@ -2,7 +2,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <stack>
+#include <utility>
 #include <vector>
 
 using namespace voroshilov_v_convex_hull_components_seq;
@@ -193,7 +195,7 @@ std::vector<Hull> voroshilov_v_convex_hull_components_seq::UnpackHulls(std::vect
       int hull_index = hulls_indexes[(y * width) + x];
       if (hull_index > 0) {
         int pixel_index = pixels_indexes[(y * width) + x];
-        hulls[hull_index - 1].pixels.push_back({y, x, pixel_index});
+        hulls[hull_index - 1].pixels.emplace_back({y, x, pixel_index});
       }
     }
   }

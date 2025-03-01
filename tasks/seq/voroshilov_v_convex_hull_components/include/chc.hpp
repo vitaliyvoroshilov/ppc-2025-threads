@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+#include <utility>
 #include <vector>
 
 namespace voroshilov_v_convex_hull_components_seq {
