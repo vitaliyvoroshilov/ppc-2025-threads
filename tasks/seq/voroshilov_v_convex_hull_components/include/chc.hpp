@@ -13,11 +13,11 @@ struct Pixel {
   Pixel(int y_param, int x_param);
   Pixel(int y_param, int x_param, int value_param);
   Pixel(const Pixel& other);
+
   Pixel& operator=(const Pixel& other) = default;
-  Pixel& operator=(int value_param);
   bool operator==(int value_param) const;
   bool operator==(const Pixel& other) const;
-  bool operator!=(const Pixel& other) const;
+  //bool operator!=(const Pixel& other) const;
 };
 
 struct Image {
