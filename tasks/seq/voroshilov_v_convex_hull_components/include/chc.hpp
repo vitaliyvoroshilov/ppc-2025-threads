@@ -62,8 +62,9 @@ std::vector<Pixel> QuickHull(Component& component);
 
 std::vector<Hull> QuickHullAll(std::vector<Component>& components);
 
-std::vector<int> PackHulls(std::vector<Hull>& hulls);
+std::pair<std::vector<int>, std::vector<int>> PackHulls(std::vector<Hull>& hulls, Image& image);
 
-std::vector<Hull> UnpackHulls(std::vector<int>& packed, int length);
+std::vector<Hull> UnpackHulls(std::vector<int>& hulls_indexes, std::vector<int>& pixels_indexes, int height, int width,
+                              size_t hulls_size);
 
 }  // namespace voroshilov_v_convex_hull_components_seq

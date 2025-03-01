@@ -35,14 +35,16 @@ TEST(voroshilov_v_convex_hull_components_seq, chc_pipeline_run) {
 
   int* p_height = &height;
   int* p_width = &width;
-  std::vector<int> out(10'000'000);
+  std::vector<int> hulls_indexes_out(height * width);
+  std::vector<int> pixels_indexes_out(height * width);
 
   auto task_data_seq = std::make_shared<ppc::core::TaskData>();
   task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
   task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_width));
   task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(pixels.data()));
   task_data_seq->inputs_count.emplace_back(pixels.size());
-  task_data_seq->outputs.emplace_back(reinterpret_cast<uint8_t*>(out.data()));
+  task_data_seq->outputs.emplace_back(reinterpret_cast<uint8_t*>(hulls_indexes_out.data()));
+  task_data_seq->outputs.emplace_back(reinterpret_cast<uint8_t*>(pixels_indexes_out.data()));
   task_data_seq->outputs_count.emplace_back(0);
 
   auto chc_task_sequential =
@@ -71,14 +73,16 @@ TEST(voroshilov_v_convex_hull_components_seq, chc_task_run) {
 
   int* p_height = &height;
   int* p_width = &width;
-  std::vector<int> out(10'000'000);
+  std::vector<int> hulls_indexes_out(height * width);
+  std::vector<int> pixels_indexes_out(height * width);
 
   auto task_data_seq = std::make_shared<ppc::core::TaskData>();
   task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
   task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_width));
   task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(pixels.data()));
   task_data_seq->inputs_count.emplace_back(pixels.size());
-  task_data_seq->outputs.emplace_back(reinterpret_cast<uint8_t*>(out.data()));
+  task_data_seq->outputs.emplace_back(reinterpret_cast<uint8_t*>(hulls_indexes_out.data()));
+  task_data_seq->outputs.emplace_back(reinterpret_cast<uint8_t*>(pixels_indexes_out.data()));
   task_data_seq->outputs_count.emplace_back(0);
 
   auto chc_task_sequential =

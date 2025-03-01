@@ -20,14 +20,16 @@ namespace {
 bool ValidationTest(int height, int width, std::vector<int>& pixels) {
   int* p_height = &height;
   int* p_width = &width;
-  std::vector<int> out(100);
+  std::vector<int> hulls_indexes_out(height * width);
+  std::vector<int> pixels_indexes_out(height * width);
 
   auto task_data_seq = std::make_shared<ppc::core::TaskData>();
   task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
   task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_width));
   task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(pixels.data()));
   task_data_seq->inputs_count.emplace_back(pixels.size());
-  task_data_seq->outputs.emplace_back(reinterpret_cast<uint8_t*>(out.data()));
+  task_data_seq->outputs.emplace_back(reinterpret_cast<uint8_t*>(hulls_indexes_out.data()));
+  task_data_seq->outputs.emplace_back(reinterpret_cast<uint8_t*>(pixels_indexes_out.data()));
   task_data_seq->outputs_count.emplace_back(0);
 
   ChcTaskSequential chc_task_sequential(task_data_seq);
@@ -37,14 +39,16 @@ bool ValidationTest(int height, int width, std::vector<int>& pixels) {
 std::vector<Hull> SimpleRunTest(int height, int width, std::vector<int>& pixels) {
   int* p_height = &height;
   int* p_width = &width;
-  std::vector<int> out(100);
+  std::vector<int> hulls_indexes_out(height * width);
+  std::vector<int> pixels_indexes_out(height * width);
 
   auto task_data_seq = std::make_shared<ppc::core::TaskData>();
   task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
   task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_width));
   task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(pixels.data()));
   task_data_seq->inputs_count.emplace_back(pixels.size());
-  task_data_seq->outputs.emplace_back(reinterpret_cast<uint8_t*>(out.data()));
+  task_data_seq->outputs.emplace_back(reinterpret_cast<uint8_t*>(hulls_indexes_out.data()));
+  task_data_seq->outputs.emplace_back(reinterpret_cast<uint8_t*>(pixels_indexes_out.data()));
   task_data_seq->outputs_count.emplace_back(0);
 
   ChcTaskSequential chc_task_sequential(task_data_seq);
@@ -53,8 +57,8 @@ std::vector<Hull> SimpleRunTest(int height, int width, std::vector<int>& pixels)
   chc_task_sequential.RunImpl();
   chc_task_sequential.PostProcessingImpl();
 
-  int out_size = static_cast<int>(task_data_seq->outputs_count[0]);
-  std::vector<Hull> hulls = UnpackHulls(out, out_size);
+  int hulls_size = static_cast<int>(task_data_seq->outputs_count[0]);
+  std::vector<Hull> hulls = UnpackHulls(hulls_indexes_out, pixels_indexes_out, height, width, hulls_size);
 
   return hulls;
 }
@@ -86,14 +90,17 @@ bool ImageRunTest(std::string& src_path, std::string& exp_path) {
 
   int* p_height = &bin_image.rows;
   int* p_width = &bin_image.cols;
-  std::vector<int> out(1000);
+  // std::vector<int> out(100);
+  std::vector<int> hulls_indexes_out(height * width);
+  std::vector<int> pixels_indexes_out(height * width);
 
   auto task_data_seq = std::make_shared<ppc::core::TaskData>();
   task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
   task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_width));
   task_data_seq->inputs.emplace_back(reinterpret_cast<uint8_t*>(pixels.data()));
   task_data_seq->inputs_count.emplace_back(pixels.size());
-  task_data_seq->outputs.emplace_back(reinterpret_cast<uint8_t*>(out.data()));
+  task_data_seq->outputs.emplace_back(reinterpret_cast<uint8_t*>(hulls_indexes_out.data()));
+  task_data_seq->outputs.emplace_back(reinterpret_cast<uint8_t*>(pixels_indexes_out.data()));
   task_data_seq->outputs_count.emplace_back(0);
 
   ChcTaskSequential chc_task_sequential(task_data_seq);
@@ -102,8 +109,8 @@ bool ImageRunTest(std::string& src_path, std::string& exp_path) {
   chc_task_sequential.RunImpl();
   chc_task_sequential.PostProcessingImpl();
 
-  int out_size = static_cast<int>(task_data_seq->outputs_count[0]);
-  std::vector<Hull> hulls = UnpackHulls(out, out_size);
+  int hulls_size = static_cast<int>(task_data_seq->outputs_count[0]);
+  std::vector<Hull> hulls = UnpackHulls(hulls_indexes_out, pixels_indexes_out, height, width, hulls_size);
 
   // Draw hulls on source image:
   for (Hull hull : hulls) {
