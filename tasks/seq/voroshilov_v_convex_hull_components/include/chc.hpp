@@ -17,7 +17,7 @@ struct Pixel {
   Pixel& operator=(const Pixel& other) = default;
   bool operator==(int value_param) const;
   bool operator==(const Pixel& other) const;
-  //bool operator!=(const Pixel& other) const;
+  // bool operator!=(const Pixel& other) const;
 };
 
 struct Image {
