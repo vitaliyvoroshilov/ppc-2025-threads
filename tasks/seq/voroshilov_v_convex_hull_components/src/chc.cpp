@@ -93,29 +93,29 @@ int voroshilov_v_convex_hull_components_seq::CheckRotation(Pixel& first, Pixel& 
 Pixel voroshilov_v_convex_hull_components_seq::FindLeftPixel(Component component) {
   if (component.pixels.empty()) {
     return {};
-  }
-
-  Pixel left = component.pixels[0];
-  for (Pixel& pixel : component.pixels) {
-    if (pixel.x < left.x) {
-      left = pixel;
+  } else {
+    Pixel left = component.pixels[0];
+    for (Pixel& pixel : component.pixels) {
+      if (pixel.x < left.x) {
+        left = pixel;
+      }
     }
+    return left;
   }
-  return left;
 }
 
 Pixel voroshilov_v_convex_hull_components_seq::FindRightPixel(Component component) {
   if (component.pixels.empty()) {
     return {};
-  }
-
-  Pixel right = component.pixels[0];
-  for (Pixel& pixel : component.pixels) {
-    if (pixel.x > right.x) {
-      right = pixel;
+  } else {
+    Pixel right = component.pixels[0];
+    for (Pixel& pixel : component.pixels) {
+      if (pixel.x > right.x) {
+        right = pixel;
+      }
     }
+    return right;
   }
-  return right;
 }
 
 Pixel voroshilov_v_convex_hull_components_seq::FindFarthestPixel(std::vector<Pixel>& pixels,
