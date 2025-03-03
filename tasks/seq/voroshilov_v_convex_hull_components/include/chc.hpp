@@ -50,6 +50,8 @@ struct Hull {
   std::vector<Pixel> pixels;
 
   Hull() = default;
+
+  bool operator==(const Hull& other) const;
 };
 
 Component DepthComponentSearch(Pixel& start_pixel, Image* tmp_image, int index);

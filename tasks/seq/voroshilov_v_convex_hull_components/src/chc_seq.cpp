@@ -25,7 +25,7 @@ bool voroshilov_v_convex_hull_components_seq::ChcTaskSequential::PreProcessingIm
 
   std::vector<int> pixels(task_data->inputs_count[0]);
   ptr = reinterpret_cast<int *>(task_data->inputs[2]);
-  std::copy(ptr, ptr + task_data->inputs_count[0], pixels.begin());
+  std::ranges::copy(ptr, ptr + task_data->inputs_count[0], pixels.begin());
 
   Image image(height, width, pixels);
   imageIn_ = image;

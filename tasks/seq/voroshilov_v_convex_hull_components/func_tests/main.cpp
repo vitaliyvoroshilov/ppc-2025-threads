@@ -196,11 +196,7 @@ TEST(voroshilov_v_convex_hull_components_seq, simpleTest1Component) {
 
   ASSERT_EQ(result_hulls.size(), expect_hulls.size());
 
-  for (size_t i = 0; i < result_hulls.size(); i++) {
-    for (size_t j = 0; j < result_hulls[i].pixels.size(); j++) {
-      EXPECT_EQ(result_hulls[i].pixels[j], expect_hulls[i].pixels[j]);
-    }
-  }
+  EXPECT_EQ(result_hulls, expect_hulls);
 }
 
 TEST(voroshilov_v_convex_hull_components_seq, simpleTest3Components) {
@@ -232,11 +228,7 @@ TEST(voroshilov_v_convex_hull_components_seq, simpleTest3Components) {
 
   ASSERT_EQ(result_hulls.size(), expect_hulls.size());
 
-  for (size_t i = 0; i < result_hulls.size(); i++) {
-    for (size_t j = 0; j < result_hulls[i].pixels.size(); j++) {
-      EXPECT_EQ(result_hulls[i].pixels[j], expect_hulls[i].pixels[j]);
-    }
-  }
+  EXPECT_EQ(result_hulls, expect_hulls);
 }
 
 TEST(voroshilov_v_convex_hull_components_seq, simpleTest5Components) {
@@ -282,12 +274,9 @@ TEST(voroshilov_v_convex_hull_components_seq, simpleTest5Components) {
 
   ASSERT_EQ(result_hulls.size(), expect_hulls.size());
 
-  for (size_t i = 0; i < result_hulls.size(); i++) {
-    for (size_t j = 0; j < result_hulls[i].pixels.size(); j++) {
-      EXPECT_EQ(result_hulls[i].pixels[j], expect_hulls[i].pixels[j]);
-    }
-  }
+  EXPECT_EQ(result_hulls, expect_hulls);
 }
+
 #ifndef _WIN32
 
 TEST(voroshilov_v_convex_hull_components_seq, imageTest0) {
