@@ -2,7 +2,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <stack>
+#include <utility>
 #include <vector>
 
 using namespace voroshilov_v_convex_hull_components_seq;
@@ -162,44 +164,56 @@ std::vector<Hull> voroshilov_v_convex_hull_components_seq::QuickHullAll(std::vec
   return hulls;
 }
 
-std::vector<int> voroshilov_v_convex_hull_components_seq::PackHulls(std::vector<Hull>& hulls) {
-  if (hulls.empty()) {
-    return {};
-  }
+std::pair<std::vector<int>, std::vector<int>> voroshilov_v_convex_hull_components_seq::PackHulls(
+    std::vector<Hull>& hulls, Image& image) {
+  int height = image.height;
+  int width = image.width;
 
-  std::vector<int> packed;
+  std::vector<int> hulls_indexes(height * width, 0);
+  std::vector<int> pixels_indexes(height * width, 0);
+
+  int hull_index = 1;
   for (Hull& hull : hulls) {
-    packed.push_back(static_cast<int>(hull.pixels.size()));
+    int pixel_index = 1;
     for (Pixel& pixel : hull.pixels) {
-      packed.push_back(pixel.y);
-      packed.push_back(pixel.x);
+      hulls_indexes[(pixel.y * width) + pixel.x] = hull_index;
+      pixels_indexes[(pixel.y * width) + pixel.x] = pixel_index;
+      pixel_index++;
     }
+    hull_index++;
   }
 
-  return packed;
+  std::pair<std::vector<int>, std::vector<int>> packed_vectors(hulls_indexes, pixels_indexes);
+  return packed_vectors;
 }
 
-std::vector<Hull> voroshilov_v_convex_hull_components_seq::UnpackHulls(std::vector<int>& packed, int length) {
-  if (packed.empty() || length == 0) {
-    return {};
+std::vector<Hull> voroshilov_v_convex_hull_components_seq::UnpackHulls(std::vector<int>& hulls_indexes,
+                                                                       std::vector<int>& pixels_indexes, int height,
+                                                                       int width, size_t hulls_size) {
+  std::vector<Hull> hulls(hulls_size);
+
+  for (int y = 0; y < height; y++) {
+    for (int x = 0; x < width; x++) {
+      int hull_index = hulls_indexes[(y * width) + x];
+      if (hull_index > 0) {
+        int pixel_index = pixels_indexes[(y * width) + x];
+        Pixel pixel(y, x, pixel_index);
+        hulls[hull_index - 1].pixels.push_back(pixel);
+      }
+    }
   }
 
-  std::vector<Hull> hulls;
-  int i = 0;
-  while (i < length) {
-    int remained_in_hull = packed[i];
-    i++;
-    Hull hull;
-    while (remained_in_hull > 0) {
-      int y = packed[i];
-      i++;
-      int x = packed[i];
-      i++;
-      Pixel pixel(y, x, 0);
-      hull.pixels.push_back(pixel);
-      remained_in_hull--;
+  for (Hull& hull : hulls) {
+    for (size_t p1 = 0; p1 < hull.pixels.size() - 1; p1++) {
+      for (size_t p2 = p1 + 1; p2 < hull.pixels.size(); p2++) {
+        if (hull.pixels[p1].value > hull.pixels[p2].value) {
+          Pixel tmp = hull.pixels[p1];
+          hull.pixels[p1] = hull.pixels[p2];
+          hull.pixels[p2] = tmp;
+        }
+      }
     }
-    hulls.push_back(hull);
   }
+
   return hulls;
 }
