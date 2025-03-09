@@ -146,9 +146,17 @@ std::vector<Pixel> voroshilov_v_convex_hull_components_seq::QuickHull(Component&
       stack.push(new_line2);
     }
   }
+
   std::ranges::reverse(hull);
 
-  return hull;
+  std::vector<Pixel> res_hull;
+  for (size_t i = 0; i < hull.size(); i++) {
+    if (i == 0 || i == hull.size() - 1 || CheckRotation(hull[i - 1], hull[i], hull[i + 1]) != 0) {
+      res_hull.push_back(hull[i]);
+    }
+  }
+
+  return res_hull;
 }
 
 std::vector<Hull> voroshilov_v_convex_hull_components_seq::QuickHullAll(std::vector<Component>& components) {
