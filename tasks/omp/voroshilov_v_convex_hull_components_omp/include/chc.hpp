@@ -41,8 +41,6 @@ struct Component {
   void Sort();
 };
 
-void SortComponentsVector(std::vector<Component>& components);
-
 struct LineSegment {
   Pixel a;
   Pixel b;
