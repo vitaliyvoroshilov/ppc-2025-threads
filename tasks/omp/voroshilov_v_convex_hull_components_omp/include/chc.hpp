@@ -38,7 +38,6 @@ struct Component {
   std::vector<Pixel> pixels;
 
   void AddPixel(const Pixel& pixel);
-  void Sort();
 };
 
 struct LineSegment {
