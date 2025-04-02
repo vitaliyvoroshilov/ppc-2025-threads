@@ -36,11 +36,6 @@ Pixel& Image::GetPixel(int y, int x) { return pixels[(y * width) + x]; }
 
 void Component::AddPixel(const Pixel& pixel) { pixels.push_back(pixel); }
 
-void Component::Sort() {
-  std::ranges::sort(pixels,
-                    [](const Pixel& p1, const Pixel& p2) { return (p1.y < p2.y || (p1.y == p2.y && p1.x < p2.x)); });
-}
-
 LineSegment::LineSegment(Pixel& a_param, Pixel& b_param) : a(a_param), b(b_param) {}
 
 bool Hull::operator==(const Hull& other) const { return pixels == other.pixels; }
@@ -283,7 +278,8 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
   int size = static_cast<int>(components.size());
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < size; i++) {
-    components[i].Sort();
+    std::ranges::sort(components[i].pixels,
+                      [](const Pixel& p1, const Pixel& p2) { return (p1.y < p2.y || (p1.y == p2.y && p1.x < p2.x)); });
   }
 
   return components;
