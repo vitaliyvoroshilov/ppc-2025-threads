@@ -6,6 +6,7 @@
 #include <atomic>
 #include <cmath>
 #include <cstddef>
+#include <iostream>
 #include <stack>
 #include <unordered_map>
 #include <utility>
@@ -224,6 +225,8 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
 
   int num_threads = omp_get_max_threads();
 
+  std::cout << "\n FindComponentsOMP(): omp_get_max_threads = " << num_threads << "\n\n";
+
   std::vector<std::vector<Component>> thread_components(num_threads);
 
   int height = tmp_image.height;
@@ -370,6 +373,8 @@ std::vector<Hull> voroshilov_v_convex_hull_components_omp::QuickHullAllOMP(std::
 
   int components_size = static_cast<int>(components.size());
   std::vector<Hull> hulls(components.size());
+
+  std::cout << "\n QuickHullAllOMP(): omp_get_max_threads = " << omp_get_max_threads() << "\n\n";
 
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < components_size; i++) {
