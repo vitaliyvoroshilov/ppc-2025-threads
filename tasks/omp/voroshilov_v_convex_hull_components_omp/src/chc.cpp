@@ -217,6 +217,10 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsIn
     }
   }
 
+  if (components.empty()) {
+    return {};
+  }
+
   return components;
 }
 
@@ -266,6 +270,11 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
 
 #pragma omp parallel
   {
+#pragma omp single
+    {
+      std::cout << "\n parallel section in FindComponentsOMP(): omp_get_num_threads = " << omp_get_num_threads()
+                << "\n\n";
+    }
     int thread_id = omp_get_thread_num();
 
     thread_components[thread_id] =
@@ -438,6 +447,10 @@ std::vector<Hull> voroshilov_v_convex_hull_components_omp::UnpackHulls(std::vect
         }
       }
     }
+  }
+
+  if (hulls.empty()) {
+    return {};
   }
 
   return hulls;
