@@ -7,7 +7,6 @@
 #include <cmath>
 #include <cstddef>
 #include <stack>
-#include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -39,13 +38,7 @@ void Component::AddPixel(const Pixel& pixel) { pixels.push_back(pixel); }
 
 void Component::Sort() {
   std::ranges::sort(pixels,
-                    [](const Pixel& p1, const Pixel& p2) { return std::tie(p1.y, p1.x) < std::tie(p2.y, p2.x); });
-}
-
-void voroshilov_v_convex_hull_components_omp::SortComponentsVector(std::vector<Component>& components) {
-  for (Component& component : components) {
-    component.Sort();
-  }
+                    [](const Pixel& p1, const Pixel& p2) { return (p1.y < p2.y || (p1.y == p2.y && p1.x < p2.x)); });
 }
 
 LineSegment::LineSegment(Pixel& a_param, Pixel& b_param) : a(a_param), b(b_param) {}
@@ -223,6 +216,10 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsIn
     }
   }
 
+  if (components.empty()) {
+    return {};
+  }
+
   return components;
 }
 
@@ -283,7 +280,11 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
 
   MergeComponentsAcrossAreas(components, tmp_image, area_height, end_y);
 
-  SortComponentsVector(components);
+  int size = static_cast<int>(components.size());
+#pragma omp parallel for schedule(dynamic)
+  for (int i = 0; i < size; i++) {
+    components[i].Sort();
+  }
 
   return components;
 }
@@ -436,6 +437,10 @@ std::vector<Hull> voroshilov_v_convex_hull_components_omp::UnpackHulls(std::vect
         }
       }
     }
+  }
+
+  if (hulls.empty()) {
+    return {};
   }
 
   return hulls;
