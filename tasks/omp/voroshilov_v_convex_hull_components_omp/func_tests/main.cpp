@@ -205,8 +205,8 @@ TEST(voroshilov_v_convex_hull_components_omp, simpleTest1Component) {
   std::vector<Hull> result_hulls = SimpleRunTest(height, width, pixels);
 
   std::vector<Hull> expect_hulls;
-  Hull hull;
-  hull.pixels = {{1, 0}, {0, 1}, {1, 2}, {2, 1}};  // First coordinate is Y, second is X!!!
+  std::vector<Pixel> hull_pixels = {{1, 0}, {0, 1}, {1, 2}, {2, 1}};  // First coordinate is Y, second is X!!!
+  Hull hull(hull_pixels);
   expect_hulls.push_back(hull);
 
   ASSERT_EQ(result_hulls.size(), expect_hulls.size());
@@ -229,16 +229,16 @@ TEST(voroshilov_v_convex_hull_components_omp, simpleTest3Components) {
 
   std::vector<Hull> expect_hulls;
 
-  Hull hull1;
-  hull1.pixels = {{0, 0}, {0, 1}, {1, 0}};
+  std::vector<Pixel> hull1_pixels = {{0, 0}, {0, 1}, {1, 0}};
+  Hull hull1(hull1_pixels);
   expect_hulls.push_back(hull1);
 
-  Hull hull2;
-  hull2.pixels = {{0, 4}, {0, 5}, {1, 5}, {1, 4}};
+  std::vector<Pixel> hull2_pixels = {{0, 4}, {0, 5}, {1, 5}, {1, 4}};
+  Hull hull2(hull2_pixels);
   expect_hulls.push_back(hull2);
 
-  Hull hull3;
-  hull3.pixels = {{4, 0}, {2, 2}, {3, 3}, {4, 1}};
+  std::vector<Pixel> hull3_pixels = {{4, 0}, {2, 2}, {3, 3}, {4, 1}};
+  Hull hull3(hull3_pixels);
   expect_hulls.push_back(hull3);
 
   SortHulls(result_hulls);
@@ -270,24 +270,24 @@ TEST(voroshilov_v_convex_hull_components_omp, simpleTest5Components) {
 
   std::vector<Hull> expect_hulls;
 
-  Hull hull1;
-  hull1.pixels = {{0, 0}, {0, 1}, {1, 2}, {2, 2}, {2, 1}, {1, 0}};
+  std::vector<Pixel> hull1_pixels = {{0, 0}, {0, 1}, {1, 2}, {2, 2}, {2, 1}, {1, 0}};
+  Hull hull1(hull1_pixels);
   expect_hulls.push_back(hull1);
 
-  Hull hull2;
-  hull2.pixels = {{1, 4}, {0, 5}, {0, 6}, {1, 7}, {2, 6}, {2, 5}};
+  std::vector<Pixel> hull2_pixels = {{1, 4}, {0, 5}, {0, 6}, {1, 7}, {2, 6}, {2, 5}};
+  Hull hull2(hull2_pixels);
   expect_hulls.push_back(hull2);
 
-  Hull hull3;
-  hull3.pixels = {{8, 7}, {5, 8}, {6, 9}, {10, 9}};
+  std::vector<Pixel> hull3_pixels = {{8, 7}, {5, 8}, {6, 9}, {10, 9}};
+  Hull hull3(hull3_pixels);
   expect_hulls.push_back(hull3);
 
-  Hull hull4;
-  hull4.pixels = {{7, 1}, {6, 2}, {7, 3}, {8, 2}};
+  std::vector<Pixel> hull4_pixels = {{7, 1}, {6, 2}, {7, 3}, {8, 2}};
+  Hull hull4(hull4_pixels);
   expect_hulls.push_back(hull4);
 
-  Hull hull5;
-  hull5.pixels = {{9, 4}, {8, 5}, {10, 5}};
+  std::vector<Pixel> hull5_pixels = {{9, 4}, {8, 5}, {10, 5}};
+  Hull hull5(hull5_pixels);
   expect_hulls.push_back(hull5);
 
   SortHulls(result_hulls);
