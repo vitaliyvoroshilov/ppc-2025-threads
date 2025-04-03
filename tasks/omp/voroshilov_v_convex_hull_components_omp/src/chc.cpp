@@ -35,9 +35,13 @@ Image::Image(int hght, int wdth, std::vector<int> pxls) {
 
 Pixel& Image::GetPixel(int y, int x) { return pixels[(y * width) + x]; }
 
+Component::Component(std::vector<Pixel>& pxls) { pixels = pxls; }
+
 void Component::AddPixel(const Pixel& pixel) { pixels.push_back(pixel); }
 
 LineSegment::LineSegment(Pixel& a_param, Pixel& b_param) : a(a_param), b(b_param) {}
+
+Hull::Hull(std::vector<Pixel>& pxls) { pixels = pxls; }
 
 bool Hull::operator==(const Hull& other) const { return pixels == other.pixels; }
 
@@ -46,10 +50,10 @@ Component voroshilov_v_convex_hull_components_omp::DepthComponentSearch(Pixel& s
   const int step_y[8] = {1, 1, 1, 0, 0, -1, -1, -1};  // Offsets by Y (up, stand, down)
   const int step_x[8] = {-1, 0, 1, -1, 1, -1, 0, 1};  // Offsets by X (left, stand, right)
   std::stack<Pixel> stack;
-  Component component;
+  std::vector<Pixel> component_pixels;
   stack.push(start_pixel);
-  tmp_image->GetPixel(start_pixel.y, start_pixel.x).value = index;        // Mark start pixel as visited
-  component.AddPixel(tmp_image->GetPixel(start_pixel.y, start_pixel.x));  // Add start pixel to component
+  tmp_image->GetPixel(start_pixel.y, start_pixel.x).value = index;                // Mark start pixel as visited
+  component_pixels.push_back(tmp_image->GetPixel(start_pixel.y, start_pixel.x));  // Add start pixel to component
 
   while (!stack.empty()) {
     Pixel current_pixel = stack.top();
@@ -60,11 +64,13 @@ Component voroshilov_v_convex_hull_components_omp::DepthComponentSearch(Pixel& s
       if (next_y >= 0 && next_y < tmp_image->height && next_x >= 0 && next_x < tmp_image->width &&
           tmp_image->GetPixel(next_y, next_x) == 1) {
         stack.push(tmp_image->GetPixel(next_y, next_x));
-        tmp_image->GetPixel(next_y, next_x).value = index;        // Mark neighbour pixel as visited
-        component.AddPixel(tmp_image->GetPixel(next_y, next_x));  // Add neighbour pixel to component
+        tmp_image->GetPixel(next_y, next_x).value = index;                // Mark neighbour pixel as visited
+        component_pixels.push_back(tmp_image->GetPixel(next_y, next_x));  // Add neighbour pixel to component
       }
     }
   }
+
+  Component component(component_pixels);
 
   return component;
 }
@@ -174,10 +180,10 @@ Component voroshilov_v_convex_hull_components_omp::DepthComponentSearchInArea(Pi
   const int step_y[8] = {1, 1, 1, 0, 0, -1, -1, -1};  // Offsets by Y (up, stand, down)
   const int step_x[8] = {-1, 0, 1, -1, 1, -1, 0, 1};  // Offsets by X (left, stand, right)
   std::stack<Pixel> stack;
-  Component component;
+  std::vector<Pixel> component_pixels;
   stack.push(start_pixel);
-  tmp_image->GetPixel(start_pixel.y, start_pixel.x).value = index;        // Mark start pixel as visited
-  component.AddPixel(tmp_image->GetPixel(start_pixel.y, start_pixel.x));  // Add start pixel to component
+  tmp_image->GetPixel(start_pixel.y, start_pixel.x).value = index;                // Mark start pixel as visited
+  component_pixels.push_back(tmp_image->GetPixel(start_pixel.y, start_pixel.x));  // Add start pixel to component
 
   while (!stack.empty()) {
     Pixel current_pixel = stack.top();
@@ -188,11 +194,13 @@ Component voroshilov_v_convex_hull_components_omp::DepthComponentSearchInArea(Pi
       if (next_y >= start_y && next_y < end_y && next_x >= 0 && next_x < tmp_image->width &&
           tmp_image->GetPixel(next_y, next_x) == 1) {
         stack.push(tmp_image->GetPixel(next_y, next_x));
-        tmp_image->GetPixel(next_y, next_x).value = index;        // Mark neighbour pixel as visited
-        component.AddPixel(tmp_image->GetPixel(next_y, next_x));  // Add neighbour pixel to component
+        tmp_image->GetPixel(next_y, next_x).value = index;                // Mark neighbour pixel as visited
+        component_pixels.push_back(tmp_image->GetPixel(next_y, next_x));  // Add neighbour pixel to component
       }
     }
   }
+
+  Component component(component_pixels);
 
   return component;
 }
