@@ -166,6 +166,34 @@ bool ImageRunTest(std::string& src_path, std::string& exp_path) {
 #endif
 
 }  // namespace
+
+TEST(voroshilov_v_convex_hull_components_omp, ComponentTest) {
+  std::vector<Pixel> pixels = {{0, 0}, {1, 1}, {2, 2}};
+
+  Component component(pixels);
+
+  ASSERT_EQ(component.pixels.size(), pixels.size());
+
+  for (size_t i = 0; i < pixels.size(); i++) {
+    EXPECT_EQ(component.pixels[i].y, pixels[i].y);
+    EXPECT_EQ(component.pixels[i].x, pixels[i].x);
+  }
+}
+
+TEST(voroshilov_v_convex_hull_components_omp, HullTest) {
+  std::vector<Pixel> pixels1 = {{0, 0}, {1, 1}, {2, 2}};
+  std::vector<Pixel> pixels2 = {{0, 0}, {1, 1}, {2, 2}};
+  std::vector<Pixel> pixels3 = {{0, 0}, {1, 1}, {3, 3}};
+
+  Hull hull1(pixels1);
+  Hull hull2(pixels2);
+  Hull hull3(pixels3);
+
+  ASSERT_TRUE(hull1 == hull2);
+
+  ASSERT_FALSE(hull1 == hull3);
+}
+
 TEST(voroshilov_v_convex_hull_components_omp, simpleValidationTest) {
   // clang-format off
   std::vector<int> pixels = 

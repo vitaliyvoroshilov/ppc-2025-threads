@@ -15,10 +15,10 @@
 using namespace voroshilov_v_convex_hull_components_omp;
 
 Pixel::Pixel(int y_param, int x_param) : y(y_param), x(x_param), value(0) {}
-Pixel::Pixel(int y_param, int x_param, int value_param) : y(y_param), x(x_param), value(value_param) {}
+NOINLINE Pixel::Pixel(int y_param, int x_param, int value_param) : y(y_param), x(x_param), value(value_param) {}
 
-bool Pixel::operator==(const int value_param) const { return value == value_param; }
-bool Pixel::operator==(const Pixel& other) const { return (y == other.y) && (x == other.x); }
+NOINLINE bool Pixel::operator==(const int value_param) const { return value == value_param; }
+NOINLINE bool Pixel::operator==(const Pixel& other) const { return (y == other.y) && (x == other.x); }
 
 Image::Image(int hght, int wdth, std::vector<int> pxls) {
   height = hght;
@@ -33,7 +33,7 @@ Image::Image(int hght, int wdth, std::vector<int> pxls) {
   }
 }
 
-Pixel& Image::GetPixel(int y, int x) { return pixels[(y * width) + x]; }
+NOINLINE Pixel& Image::GetPixel(int y, int x) { return pixels[(y * width) + x]; }
 
 Component::Component(std::vector<Pixel>& pxls) { pixels = pxls; }
 
@@ -299,7 +299,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
   return components;
 }
 
-double voroshilov_v_convex_hull_components_omp::CheckRotation(Pixel& first, Pixel& second, Pixel& third) {
+NOINLINE double voroshilov_v_convex_hull_components_omp::CheckRotation(Pixel& first, Pixel& second, Pixel& third) {
   return ((second.x - first.x) * (third.y - second.y)) - ((second.y - first.y) * (third.x - second.x));
 }
 
