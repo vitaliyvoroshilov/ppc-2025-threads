@@ -168,15 +168,20 @@ bool ImageRunTest(std::string& src_path, std::string& exp_path) {
 }  // namespace
 
 TEST(voroshilov_v_convex_hull_components_omp, ComponentTest) {
+  Component component1;
+  component1.pixels.push_back({0, 10});
+
+  ASSERT_EQ(component1.pixels.size(), 1);
+
   std::vector<Pixel> pixels = {{0, 0}, {1, 1}, {2, 2}};
 
-  Component component(pixels);
+  Component component2(pixels);
 
-  ASSERT_EQ(component.pixels.size(), pixels.size());
+  ASSERT_EQ(component2.pixels.size(), pixels.size());
 
   for (size_t i = 0; i < pixels.size(); i++) {
-    EXPECT_EQ(component.pixels[i].y, pixels[i].y);
-    EXPECT_EQ(component.pixels[i].x, pixels[i].x);
+    EXPECT_EQ(component2.pixels[i].y, pixels[i].y);
+    EXPECT_EQ(component2.pixels[i].x, pixels[i].x);
   }
 }
 
@@ -188,10 +193,13 @@ TEST(voroshilov_v_convex_hull_components_omp, HullTest) {
   Hull hull1(pixels1);
   Hull hull2(pixels2);
   Hull hull3(pixels3);
+  Hull hull4;
 
   ASSERT_TRUE(hull1 == hull2);
 
   ASSERT_FALSE(hull1 == hull3);
+
+  ASSERT_FALSE(hull1 == hull4);
 }
 
 TEST(voroshilov_v_convex_hull_components_omp, simpleValidationTest) {
