@@ -211,7 +211,9 @@ TEST(voroshilov_v_convex_hull_components_omp, simpleTest1Component) {
 
   ASSERT_EQ(result_hulls.size(), expect_hulls.size());
 
-  EXPECT_EQ(result_hulls, expect_hulls);
+  for (size_t i = 0; i < result_hulls.size(); i++) {
+    EXPECT_EQ(result_hulls[i], expect_hulls[i]);
+  }
 }
 
 TEST(voroshilov_v_convex_hull_components_omp, simpleTest3Components) {
@@ -246,7 +248,9 @@ TEST(voroshilov_v_convex_hull_components_omp, simpleTest3Components) {
 
   ASSERT_EQ(result_hulls.size(), expect_hulls.size());
 
-  EXPECT_EQ(result_hulls, expect_hulls);
+  for (size_t i = 0; i < result_hulls.size(); i++) {
+    EXPECT_EQ(result_hulls[i], expect_hulls[i]);
+  }
 }
 
 TEST(voroshilov_v_convex_hull_components_omp, simpleTest5Components) {
@@ -295,7 +299,9 @@ TEST(voroshilov_v_convex_hull_components_omp, simpleTest5Components) {
 
   ASSERT_EQ(result_hulls.size(), expect_hulls.size());
 
-  EXPECT_EQ(result_hulls, expect_hulls);
+  for (size_t i = 0; i < result_hulls.size(); i++) {
+    EXPECT_EQ(result_hulls[i], expect_hulls[i]);
+  }
 }
 
 #ifndef _WIN32

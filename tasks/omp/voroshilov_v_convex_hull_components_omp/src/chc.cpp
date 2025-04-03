@@ -37,8 +37,6 @@ Pixel& Image::GetPixel(int y, int x) { return pixels[(y * width) + x]; }
 
 Component::Component(std::vector<Pixel>& pxls) { pixels = pxls; }
 
-void Component::AddPixel(const Pixel& pixel) { pixels.push_back(pixel); }
-
 LineSegment::LineSegment(Pixel& a_param, Pixel& b_param) : a(a_param), b(b_param) {}
 
 Hull::Hull(std::vector<Pixel>& pxls) { pixels = pxls; }
@@ -301,10 +299,8 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
   return components;
 }
 
-int voroshilov_v_convex_hull_components_omp::CheckRotation(Pixel& first, Pixel& second, Pixel& third) {
-  int res = ((second.x - first.x) * (third.y - second.y)) - ((second.y - first.y) * (third.x - second.x));
-
-  return res;
+double voroshilov_v_convex_hull_components_omp::CheckRotation(Pixel& first, Pixel& second, Pixel& third) {
+  return ((second.x - first.x) * (third.y - second.y)) - ((second.y - first.y) * (third.x - second.x));
 }
 
 Pixel voroshilov_v_convex_hull_components_omp::FindFarthestPixel(std::vector<Pixel>& pixels,
@@ -315,7 +311,7 @@ Pixel voroshilov_v_convex_hull_components_omp::FindFarthestPixel(std::vector<Pix
   for (Pixel& c : pixels) {
     Pixel a = line_segment.a;
     Pixel b = line_segment.b;
-    if (CheckRotation(a, b, c) < 0) {  // left rotation
+    if (CheckRotation(a, b, c) < 0.0) {  // left rotation
       double distance = std::abs(((b.x - a.x) * (a.y - c.y)) - ((a.x - c.x) * (b.y - a.y)));
       if (distance > max_dist) {
         max_dist = distance;
@@ -373,7 +369,7 @@ std::vector<Pixel> voroshilov_v_convex_hull_components_omp::QuickHull(Component&
 
   std::vector<Pixel> res_hull;
   for (size_t i = 0; i < hull.size(); i++) {
-    if (i == 0 || i == hull.size() - 1 || CheckRotation(hull[i - 1], hull[i], hull[i + 1]) != 0) {
+    if (i == 0 || i == hull.size() - 1 || CheckRotation(hull[i - 1], hull[i], hull[i + 1]) != 0.0) {
       res_hull.push_back(hull[i]);
     }
   }

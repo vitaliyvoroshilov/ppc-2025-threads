@@ -39,8 +39,6 @@ struct Component {
 
   Component() = default;
   Component(std::vector<Pixel>& pxls);
-
-  void AddPixel(const Pixel& pixel);
 };
 
 struct LineSegment {
@@ -84,7 +82,7 @@ std::vector<Component> FindComponentsInArea(Image& tmp_image, int start_y, int e
 
 std::vector<Component> FindComponentsOMP(Image& image);
 
-int CheckRotation(Pixel& first, Pixel& second, Pixel& third);
+double CheckRotation(Pixel& first, Pixel& second, Pixel& third);
 
 Pixel FindFarthestPixel(std::vector<Pixel>& pixels, LineSegment& line_segment);
 
