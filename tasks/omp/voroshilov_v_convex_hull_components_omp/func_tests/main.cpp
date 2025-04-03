@@ -169,9 +169,8 @@ bool ImageRunTest(std::string& src_path, std::string& exp_path) {
 
 TEST(voroshilov_v_convex_hull_components_omp, ComponentTest) {
   Component component1;
-  component1.pixels.push_back({0, 10});
 
-  ASSERT_EQ(component1.pixels.size(), 1);
+  ASSERT_TRUE(component1.pixels.empty());
 
   std::vector<Pixel> pixels = {{0, 0}, {1, 1}, {2, 2}};
 
