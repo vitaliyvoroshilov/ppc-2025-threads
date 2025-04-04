@@ -35,7 +35,7 @@ Image::Image(int hght, int wdth, std::vector<int> pxls) {
 
 NOINLINE Pixel& Image::GetPixel(int y, int x) { return pixels[(y * width) + x]; }
 
-Component::Component(size_t size) { pixels.resize(size); }
+Component::Component(size_t size) : pixels(size) {}
 
 // Component::Component(std::vector<Pixel>& pxls) { pixels = pxls; }
 
