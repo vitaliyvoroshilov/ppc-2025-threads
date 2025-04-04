@@ -30,6 +30,9 @@ struct Pixel {
   NOINLINE bool operator==(const Pixel& other) const;
 };
 
+//using Component = std::vector<Pixel>;
+//using Hull = std::vector<Pixel>;
+
 struct Image {
   int height;
   int width;
@@ -61,10 +64,6 @@ struct Hull {
 
   bool operator==(const Hull& other) const;
 };
-
-Component DepthComponentSearch(Pixel& start_pixel, Image* tmp_image, int index);
-
-std::vector<Component> FindComponentsSeq(Image& image);
 
 class UnionFind {
  public:
