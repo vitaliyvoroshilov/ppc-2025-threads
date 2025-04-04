@@ -45,7 +45,7 @@ struct Image {
 struct Component {
   std::vector<Pixel> pixels;
 
-  Component();
+  Component(size_t size);
 };
 
 struct LineSegment {
@@ -58,7 +58,7 @@ struct LineSegment {
 struct Hull {
   std::vector<Pixel> pixels;
 
-  Hull();
+  Hull() = default;
   Hull(std::vector<Pixel>& pxls);
 
   bool operator==(const Hull& other) const;

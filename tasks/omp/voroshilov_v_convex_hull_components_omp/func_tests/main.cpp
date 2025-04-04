@@ -168,7 +168,7 @@ bool ImageRunTest(std::string& src_path, std::string& exp_path) {
 }  // namespace
 
 TEST(voroshilov_v_convex_hull_components_omp, ComponentTest) {
-  Component component;
+  Component component(0);
 
   ASSERT_TRUE(component.pixels.empty());
 
