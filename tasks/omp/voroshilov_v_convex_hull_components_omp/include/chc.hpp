@@ -34,15 +34,6 @@ struct Image {
   Pixel& GetPixel(int y, int x);
 };
 
-struct Component {
-  std::vector<Pixel> pixels;
-
-  Component() = default;
-  Component(std::vector<Pixel>& pxls);
-
-  void AddPixel(const Pixel& pixel);
-};
-
 struct LineSegment {
   Pixel a;
   Pixel b;
@@ -50,18 +41,9 @@ struct LineSegment {
   LineSegment(Pixel& a_param, Pixel& b_param);
 };
 
-struct Hull {
-  std::vector<Pixel> pixels;
+using Component = std::vector<Pixel>;
 
-  Hull() = default;
-  Hull(std::vector<Pixel>& pxls);
-
-  bool operator==(const Hull& other) const;
-};
-
-Component DepthComponentSearch(Pixel& start_pixel, Image* tmp_image, int index);
-
-std::vector<Component> FindComponentsSeq(Image& image);
+using Hull = std::vector<Pixel>;
 
 class UnionFind {
  public:

@@ -34,64 +34,7 @@ Image::Image(int hght, int wdth, std::vector<int> pxls) {
 
 Pixel& Image::GetPixel(int y, int x) { return pixels[(y * width) + x]; }
 
-Component::Component(std::vector<Pixel>& pxls) { pixels = pxls; }
-
-void Component::AddPixel(const Pixel& pixel) { pixels.push_back(pixel); }
-
 LineSegment::LineSegment(Pixel& a_param, Pixel& b_param) : a(a_param), b(b_param) {}
-
-Hull::Hull(std::vector<Pixel>& pxls) { pixels = pxls; }
-
-bool Hull::operator==(const Hull& other) const { return pixels == other.pixels; }
-
-Component voroshilov_v_convex_hull_components_omp::DepthComponentSearch(Pixel& start_pixel, Image* tmp_image,
-                                                                        int index) {
-  const int step_y[8] = {1, 1, 1, 0, 0, -1, -1, -1};  // Offsets by Y (up, stand, down)
-  const int step_x[8] = {-1, 0, 1, -1, 1, -1, 0, 1};  // Offsets by X (left, stand, right)
-  std::stack<Pixel> stack;
-  std::vector<Pixel> component_pixels;
-  stack.push(start_pixel);
-  tmp_image->GetPixel(start_pixel.y, start_pixel.x).value = index;                // Mark start pixel as visited
-  component_pixels.push_back(tmp_image->GetPixel(start_pixel.y, start_pixel.x));  // Add start pixel to component
-
-  while (!stack.empty()) {
-    Pixel current_pixel = stack.top();
-    stack.pop();
-    for (int i = 0; i < 8; i++) {
-      int next_y = current_pixel.y + step_y[i];
-      int next_x = current_pixel.x + step_x[i];
-      if (next_y >= 0 && next_y < tmp_image->height && next_x >= 0 && next_x < tmp_image->width &&
-          tmp_image->GetPixel(next_y, next_x) == 1) {
-        stack.push(tmp_image->GetPixel(next_y, next_x));
-        tmp_image->GetPixel(next_y, next_x).value = index;                // Mark neighbour pixel as visited
-        component_pixels.push_back(tmp_image->GetPixel(next_y, next_x));  // Add neighbour pixel to component
-      }
-    }
-  }
-
-  Component component(component_pixels);
-
-  return component;
-}
-
-std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsSeq(Image& image) {
-  Image tmp_image(image);
-  std::vector<Component> components;
-  int count = 0;
-  for (int y = 0; y < tmp_image.height; y++) {
-    for (int x = 0; x < tmp_image.width; x++) {
-      if (tmp_image.GetPixel(y, x) == 1) {
-        Component component = DepthComponentSearch(tmp_image.GetPixel(y, x), &tmp_image, count + 2);
-        components.push_back(component);
-        count++;
-      }
-    }
-  }
-  if (components.empty()) {
-    return {};
-  }
-  return components;
-}
 
 int UnionFind::FindRoot(int x) {
   if (roots.find(x) == roots.end()) {
@@ -160,12 +103,11 @@ void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::ve
 
   std::unordered_map<int, Component> merged_components;
   for (Component& component : components) {
-    int new_id = union_find.FindRoot(component.pixels[0].value);
+    int new_id = union_find.FindRoot(component[0].value);
     if (merged_components.find(new_id) == merged_components.end()) {
       merged_components[new_id] = Component();
     }
-    merged_components[new_id].pixels.insert(merged_components[new_id].pixels.end(), component.pixels.begin(),
-                                            component.pixels.end());
+    merged_components[new_id].insert(merged_components[new_id].end(), component.begin(), component.end());
   }
 
   components.clear();
@@ -235,10 +177,6 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
 
   int height = tmp_image.height;
 
-  if (num_threads > height) {
-    return FindComponentsSeq(image);
-  }
-
   int area_height = height / num_threads;
   int remainder = height % num_threads;
   std::vector<int> start_y(num_threads);
@@ -286,7 +224,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
   int size = static_cast<int>(components.size());
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < size; i++) {
-    std::ranges::sort(components[i].pixels,
+    std::ranges::sort(components[i],
                       [](const Pixel& p1, const Pixel& p2) { return (p1.y < p2.y || (p1.y == p2.y && p1.x < p2.x)); });
   }
 
@@ -318,14 +256,14 @@ Pixel voroshilov_v_convex_hull_components_omp::FindFarthestPixel(std::vector<Pix
 }
 
 std::vector<Pixel> voroshilov_v_convex_hull_components_omp::QuickHull(Component& component) {
-  if (component.pixels.size() < 3) {
-    return component.pixels;
+  if (component.size() < 3) {
+    return component;
   }
 
-  Pixel left = component.pixels[0];
-  Pixel right = component.pixels[0];
+  Pixel left = component[0];
+  Pixel right = component[0];
 
-  for (Pixel& pixel : component.pixels) {
+  for (Pixel& pixel : component) {
     if (pixel.x < left.x) {
       left = pixel;
     }
@@ -348,7 +286,7 @@ std::vector<Pixel> voroshilov_v_convex_hull_components_omp::QuickHull(Component&
     Pixel b = line_segment.b;
     stack.pop();
 
-    Pixel c = FindFarthestPixel(component.pixels, line_segment);
+    Pixel c = FindFarthestPixel(component, line_segment);
     if (c == -1) {
       hull.push_back(a);
     } else {
@@ -381,7 +319,7 @@ std::vector<Hull> voroshilov_v_convex_hull_components_omp::QuickHullAllOMP(std::
 
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < components_size; i++) {
-    hulls[i].pixels = QuickHull(components[i]);
+    hulls[i] = QuickHull(components[i]);
   }
 
   return hulls;
@@ -401,12 +339,12 @@ std::pair<std::vector<int>, std::vector<int>> voroshilov_v_convex_hull_component
 #pragma omp parallel for
   for (int i = 0; i < hulls_size; i++) {
     int pixel_index = 1;
-    int pixels_size = static_cast<int>(hulls[i].pixels.size());
+    int pixels_size = static_cast<int>(hulls[i].size());
     int hull_index = uniq_hull_index.fetch_add(1);
 
     for (int j = 0; j < pixels_size; j++) {
-      hulls_indexes[(hulls[i].pixels[j].y * width) + hulls[i].pixels[j].x] = hull_index;
-      pixels_indexes[(hulls[i].pixels[j].y * width) + hulls[i].pixels[j].x] = pixel_index;
+      hulls_indexes[(hulls[i][j].y * width) + hulls[i][j].x] = hull_index;
+      pixels_indexes[(hulls[i][j].y * width) + hulls[i][j].x] = pixel_index;
       pixel_index++;
     }
   }
@@ -426,18 +364,18 @@ std::vector<Hull> voroshilov_v_convex_hull_components_omp::UnpackHulls(std::vect
       if (hull_index > 0) {
         int pixel_index = pixels_indexes[(y * width) + x];
         Pixel pixel(y, x, pixel_index);
-        hulls[hull_index - 1].pixels.push_back(pixel);
+        hulls[hull_index - 1].push_back(pixel);
       }
     }
   }
 
   for (Hull& hull : hulls) {
-    for (size_t p1 = 0; p1 < hull.pixels.size() - 1; p1++) {
-      for (size_t p2 = p1 + 1; p2 < hull.pixels.size(); p2++) {
-        if (hull.pixels[p1].value > hull.pixels[p2].value) {
-          Pixel tmp = hull.pixels[p1];
-          hull.pixels[p1] = hull.pixels[p2];
-          hull.pixels[p2] = tmp;
+    for (size_t p1 = 0; p1 < hull.size() - 1; p1++) {
+      for (size_t p2 = p1 + 1; p2 < hull.size(); p2++) {
+        if (hull[p1].value > hull[p2].value) {
+          Pixel tmp = hull[p1];
+          hull[p1] = hull[p2];
+          hull[p2] = tmp;
         }
       }
     }

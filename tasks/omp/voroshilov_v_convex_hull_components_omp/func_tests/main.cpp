@@ -22,9 +22,9 @@ namespace {
 void SortHulls(std::vector<Hull>& hulls) {
   std::ranges::sort(hulls, [](const Hull& a, const Hull& b) {
     const Pixel& left_top_a = *std::ranges::min_element(
-        a.pixels, [](const Pixel& p1, const Pixel& p2) { return p1.x < p2.x || (p1.x == p2.x && p1.y < p2.y); });
+        a, [](const Pixel& p1, const Pixel& p2) { return p1.x < p2.x || (p1.x == p2.x && p1.y < p2.y); });
     const Pixel& left_top_b = *std::ranges::min_element(
-        b.pixels, [](const Pixel& p1, const Pixel& p2) { return p1.x < p2.x || (p1.x == p2.x && p1.y < p2.y); });
+        b, [](const Pixel& p1, const Pixel& p2) { return p1.x < p2.x || (p1.x == p2.x && p1.y < p2.y); });
 
     return left_top_a.x < left_top_b.x || (left_top_a.x == left_top_b.x && left_top_a.y < left_top_b.y);
   });
@@ -128,17 +128,17 @@ bool ImageRunTest(std::string& src_path, std::string& exp_path) {
 
   // Draw hulls on source image:
   for (Hull hull : hulls) {
-    for (size_t i = 0; i < hull.pixels.size() - 1; i++) {
-      cv::circle(src_image, cv::Point(hull.pixels[i].x, hull.pixels[i].y), 2, cv::Scalar(0, 0, 255), cv::FILLED);
+    for (size_t i = 0; i < hull.size() - 1; i++) {
+      cv::circle(src_image, cv::Point(hull[i].x, hull[i].y), 2, cv::Scalar(0, 0, 255), cv::FILLED);
 
-      cv::line(src_image, cv::Point(hull.pixels[i].x, hull.pixels[i].y),
-               cv::Point(hull.pixels[i + 1].x, hull.pixels[i + 1].y), cv::Scalar(0, 0, 255), 1);
+      cv::line(src_image, cv::Point(hull[i].x, hull[i].y), cv::Point(hull[i + 1].x, hull[i + 1].y),
+               cv::Scalar(0, 0, 255), 1);
     }
-    cv::circle(src_image, cv::Point(hull.pixels[hull.pixels.size() - 1].x, hull.pixels[hull.pixels.size() - 1].y), 2,
-               cv::Scalar(0, 0, 255), cv::FILLED);
+    cv::circle(src_image, cv::Point(hull[hull.size() - 1].x, hull[hull.size() - 1].y), 2, cv::Scalar(0, 0, 255),
+               cv::FILLED);
 
-    cv::line(src_image, cv::Point(hull.pixels[hull.pixels.size() - 1].x, hull.pixels[hull.pixels.size() - 1].y),
-             cv::Point(hull.pixels[0].x, hull.pixels[0].y), cv::Scalar(0, 0, 255), 1);
+    cv::line(src_image, cv::Point(hull[hull.size() - 1].x, hull[hull.size() - 1].y), cv::Point(hull[0].x, hull[0].y),
+             cv::Scalar(0, 0, 255), 1);
   }
 
   // Load expected image:
@@ -205,13 +205,16 @@ TEST(voroshilov_v_convex_hull_components_omp, simpleTest1Component) {
   std::vector<Hull> result_hulls = SimpleRunTest(height, width, pixels);
 
   std::vector<Hull> expect_hulls;
-  std::vector<Pixel> hull_pixels = {{1, 0}, {0, 1}, {1, 2}, {2, 1}};  // First coordinate is Y, second is X!!!
-  Hull hull(hull_pixels);
+  Hull hull = {{1, 0}, {0, 1}, {1, 2}, {2, 1}};  // First coordinate is Y, second is X!!!
   expect_hulls.push_back(hull);
 
   ASSERT_EQ(result_hulls.size(), expect_hulls.size());
 
-  EXPECT_EQ(result_hulls, expect_hulls);
+  for (size_t i = 0; i < result_hulls.size(); i++) {
+    for (size_t j = 0; j < result_hulls[i].size(); j++) {
+      EXPECT_EQ(result_hulls[i][j], expect_hulls[i][j]);
+    }
+  }
 }
 
 TEST(voroshilov_v_convex_hull_components_omp, simpleTest3Components) {
@@ -229,16 +232,13 @@ TEST(voroshilov_v_convex_hull_components_omp, simpleTest3Components) {
 
   std::vector<Hull> expect_hulls;
 
-  std::vector<Pixel> hull1_pixels = {{0, 0}, {0, 1}, {1, 0}};
-  Hull hull1(hull1_pixels);
+  Hull hull1 = {{0, 0}, {0, 1}, {1, 0}};
   expect_hulls.push_back(hull1);
 
-  std::vector<Pixel> hull2_pixels = {{0, 4}, {0, 5}, {1, 5}, {1, 4}};
-  Hull hull2(hull2_pixels);
+  Hull hull2 = {{0, 4}, {0, 5}, {1, 5}, {1, 4}};
   expect_hulls.push_back(hull2);
 
-  std::vector<Pixel> hull3_pixels = {{4, 0}, {2, 2}, {3, 3}, {4, 1}};
-  Hull hull3(hull3_pixels);
+  Hull hull3 = {{4, 0}, {2, 2}, {3, 3}, {4, 1}};
   expect_hulls.push_back(hull3);
 
   SortHulls(result_hulls);
@@ -246,7 +246,11 @@ TEST(voroshilov_v_convex_hull_components_omp, simpleTest3Components) {
 
   ASSERT_EQ(result_hulls.size(), expect_hulls.size());
 
-  EXPECT_EQ(result_hulls, expect_hulls);
+  for (size_t i = 0; i < result_hulls.size(); i++) {
+    for (size_t j = 0; j < result_hulls[i].size(); j++) {
+      EXPECT_EQ(result_hulls[i][j], expect_hulls[i][j]);
+    }
+  }
 }
 
 TEST(voroshilov_v_convex_hull_components_omp, simpleTest5Components) {
@@ -270,24 +274,19 @@ TEST(voroshilov_v_convex_hull_components_omp, simpleTest5Components) {
 
   std::vector<Hull> expect_hulls;
 
-  std::vector<Pixel> hull1_pixels = {{0, 0}, {0, 1}, {1, 2}, {2, 2}, {2, 1}, {1, 0}};
-  Hull hull1(hull1_pixels);
+  Hull hull1 = {{0, 0}, {0, 1}, {1, 2}, {2, 2}, {2, 1}, {1, 0}};
   expect_hulls.push_back(hull1);
 
-  std::vector<Pixel> hull2_pixels = {{1, 4}, {0, 5}, {0, 6}, {1, 7}, {2, 6}, {2, 5}};
-  Hull hull2(hull2_pixels);
+  Hull hull2 = {{1, 4}, {0, 5}, {0, 6}, {1, 7}, {2, 6}, {2, 5}};
   expect_hulls.push_back(hull2);
 
-  std::vector<Pixel> hull3_pixels = {{8, 7}, {5, 8}, {6, 9}, {10, 9}};
-  Hull hull3(hull3_pixels);
+  Hull hull3 = {{8, 7}, {5, 8}, {6, 9}, {10, 9}};
   expect_hulls.push_back(hull3);
 
-  std::vector<Pixel> hull4_pixels = {{7, 1}, {6, 2}, {7, 3}, {8, 2}};
-  Hull hull4(hull4_pixels);
+  Hull hull4 = {{7, 1}, {6, 2}, {7, 3}, {8, 2}};
   expect_hulls.push_back(hull4);
 
-  std::vector<Pixel> hull5_pixels = {{9, 4}, {8, 5}, {10, 5}};
-  Hull hull5(hull5_pixels);
+  Hull hull5 = {{9, 4}, {8, 5}, {10, 5}};
   expect_hulls.push_back(hull5);
 
   SortHulls(result_hulls);
@@ -295,7 +294,11 @@ TEST(voroshilov_v_convex_hull_components_omp, simpleTest5Components) {
 
   ASSERT_EQ(result_hulls.size(), expect_hulls.size());
 
-  EXPECT_EQ(result_hulls, expect_hulls);
+  for (size_t i = 0; i < result_hulls.size(); i++) {
+    for (size_t j = 0; j < result_hulls[i].size(); j++) {
+      EXPECT_EQ(result_hulls[i][j], expect_hulls[i][j]);
+    }
+  }
 }
 
 #ifndef _WIN32
