@@ -30,8 +30,8 @@ struct Pixel {
   NOINLINE bool operator==(const Pixel& other) const;
 };
 
-//using Component = std::vector<Pixel>;
-//using Hull = std::vector<Pixel>;
+// using Component = std::vector<Pixel>;
+// using Hull = std::vector<Pixel>;
 
 struct Image {
   int height;
