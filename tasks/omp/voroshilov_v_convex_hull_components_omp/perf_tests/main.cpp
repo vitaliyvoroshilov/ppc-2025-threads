@@ -79,7 +79,7 @@ std::vector<Hull> GetHullsWithOpencv(int height, int width, std::vector<int>& pi
     Hull hull;
     for (const cv::Point& p : hull_cv) {
       Pixel pixel(p.y, p.x);
-      hull.pixels.push_back(pixel);
+      hull.push_back(pixel);
     }
     hulls_cv.push_back(hull);
   }
@@ -90,16 +90,15 @@ std::vector<Hull> GetHullsWithOpencv(int height, int width, std::vector<int>& pi
 #endif
 
 void SortPixels(Hull& hull) {
-  std::ranges::sort(hull.pixels,
-                    [](const Pixel& p1, const Pixel& p2) { return std::tie(p1.y, p1.x) < std::tie(p2.y, p2.x); });
+  std::ranges::sort(hull, [](const Pixel& p1, const Pixel& p2) { return std::tie(p1.y, p1.x) < std::tie(p2.y, p2.x); });
 }
 
 void SortHulls(std::vector<Hull>& hulls) {
   std::ranges::sort(hulls, [](const Hull& a, const Hull& b) {
     const Pixel& left_top_a = *std::ranges::min_element(
-        a.pixels, [](const Pixel& p1, const Pixel& p2) { return p1.x < p2.x || (p1.x == p2.x && p1.y < p2.y); });
+        a, [](const Pixel& p1, const Pixel& p2) { return p1.x < p2.x || (p1.x == p2.x && p1.y < p2.y); });
     const Pixel& left_top_b = *std::ranges::min_element(
-        b.pixels, [](const Pixel& p1, const Pixel& p2) { return p1.x < p2.x || (p1.x == p2.x && p1.y < p2.y); });
+        b, [](const Pixel& p1, const Pixel& p2) { return p1.x < p2.x || (p1.x == p2.x && p1.y < p2.y); });
 
     return left_top_a.x < left_top_b.x || (left_top_a.x == left_top_b.x && left_top_a.y < left_top_b.y);
   });
@@ -108,7 +107,7 @@ void SortHulls(std::vector<Hull>& hulls) {
 bool IsHullSubset(Hull& hull_first, Hull& hull_second) {
   Hull smaller;
   Hull larger;
-  if (hull_first.pixels.size() <= hull_second.pixels.size()) {
+  if (hull_first.size() <= hull_second.size()) {
     smaller = hull_first;
     larger = hull_second;
   } else {
@@ -122,14 +121,14 @@ bool IsHullSubset(Hull& hull_first, Hull& hull_second) {
   size_t i = 0;
   size_t j = 0;
 
-  while (i < smaller.pixels.size() && j < larger.pixels.size()) {
-    if (smaller.pixels[i] == larger.pixels[j]) {
+  while (i < smaller.size() && j < larger.size()) {
+    if (smaller[i] == larger[j]) {
       i++;  // found a point from smaller in larger
     }
     j++;  // move on larger
   }
 
-  return i == smaller.pixels.size();  // if true then smaller is subset of larger
+  return i == smaller.size();  // if true then smaller is subset of larger
 }
 
 }  // namespace

@@ -30,9 +30,6 @@ struct Pixel {
   NOINLINE bool operator==(const Pixel& other) const;
 };
 
-// using Component = std::vector<Pixel>;
-// using Hull = std::vector<Pixel>;
-
 struct Image {
   int height;
   int width;
@@ -45,9 +42,9 @@ struct Image {
   NOINLINE Pixel& GetPixel(int y, int x);
 };
 
-struct Component {
+/*struct Component {
   std::vector<Pixel> pixels;
-};
+};*/
 
 struct LineSegment {
   Pixel a;
@@ -56,14 +53,17 @@ struct LineSegment {
   NOINLINE LineSegment(Pixel& a_param, Pixel& b_param);
 };
 
-struct Hull {
+/*struct Hull {
   std::vector<Pixel> pixels;
 
   Hull() = default;
   Hull(std::vector<Pixel>& pxls);
 
   bool operator==(const Hull& other) const;
-};
+};*/
+
+using Component = std::vector<Pixel>;
+using Hull = std::vector<Pixel>;
 
 class UnionFind {
  public:
