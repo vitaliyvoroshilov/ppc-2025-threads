@@ -72,7 +72,10 @@ Component voroshilov_v_convex_hull_components_omp::DepthComponentSearch(Pixel& s
     }
   }
 
-  Component component(component_pixels);
+  Component component;
+  for (size_t i = 0; i < component_pixels.size(); i++) {
+    component.pixels.push_back(component_pixels[i]);
+  }
 
   return component;
 }
@@ -202,7 +205,10 @@ Component voroshilov_v_convex_hull_components_omp::DepthComponentSearchInArea(Pi
     }
   }
 
-  Component component(component_pixels);
+  Component component;
+  for (size_t i = 0; i < component_pixels.size(); i++) {
+    component.pixels.push_back(component_pixels[i]);
+  }
 
   return component;
 }
