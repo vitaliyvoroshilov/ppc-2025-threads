@@ -35,9 +35,9 @@ Image::Image(int hght, int wdth, std::vector<int> pxls) {
 
 NOINLINE Pixel& Image::GetPixel(int y, int x) { return pixels[(y * width) + x]; }
 
-Component::Component() {}
+Component::Component() { pixels.resize(0); }
 
-Component::Component(std::vector<Pixel>& pxls) { pixels = pxls; }
+//Component::Component(std::vector<Pixel>& pxls) { pixels = pxls; }
 
 LineSegment::LineSegment(Pixel& a_param, Pixel& b_param) : a(a_param), b(b_param) {}
 

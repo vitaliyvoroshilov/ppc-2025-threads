@@ -46,7 +46,6 @@ struct Component {
   std::vector<Pixel> pixels;
 
   Component();
-  Component(std::vector<Pixel>& pxls);
 };
 
 struct LineSegment {
