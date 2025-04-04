@@ -44,8 +44,6 @@ struct Image {
 
 struct Component {
   std::vector<Pixel> pixels;
-
-  Component(size_t size = 0);
 };
 
 struct LineSegment {

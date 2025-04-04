@@ -35,8 +35,6 @@ Image::Image(int hght, int wdth, std::vector<int> pxls) {
 
 NOINLINE Pixel& Image::GetPixel(int y, int x) { return pixels[(y * width) + x]; }
 
-Component::Component(size_t size) : pixels(size) {}
-
 // Component::Component(std::vector<Pixel>& pxls) { pixels = pxls; }
 
 LineSegment::LineSegment(Pixel& a_param, Pixel& b_param) : a(a_param), b(b_param) {}
@@ -70,7 +68,7 @@ Component voroshilov_v_convex_hull_components_omp::DepthComponentSearch(Pixel& s
     }
   }
 
-  Component component(0);
+  Component component;
   for (size_t i = 0; i < component_pixels.size(); i++) {
     component.pixels.push_back(component_pixels[i]);
   }
@@ -166,7 +164,7 @@ void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::ve
   for (Component& component : components) {
     int new_id = union_find.FindRoot(component.pixels[0].value);
     if (merged_components.find(new_id) == merged_components.end()) {
-      merged_components[new_id] = Component(0);
+      merged_components[new_id] = Component();
     }
     merged_components[new_id].pixels.insert(merged_components[new_id].pixels.end(), component.pixels.begin(),
                                             component.pixels.end());
@@ -203,7 +201,7 @@ Component voroshilov_v_convex_hull_components_omp::DepthComponentSearchInArea(Pi
     }
   }
 
-  Component component(0);
+  Component component;
   for (size_t i = 0; i < component_pixels.size(); i++) {
     component.pixels.push_back(component_pixels[i]);
   }
