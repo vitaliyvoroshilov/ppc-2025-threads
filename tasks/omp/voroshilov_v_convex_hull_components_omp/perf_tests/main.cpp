@@ -20,18 +20,18 @@ using namespace voroshilov_v_convex_hull_components_omp;
 
 namespace {
 
-std::vector<int> GenerateLargeComponents(int width, int height, int num_components, int size_components) {
+std::vector<int> GenerateRectanglesComponents(int width, int height, int num_components, int size_y, int size_x) {
   std::mt19937 rng(std::random_device{}());
-  std::uniform_int_distribution<int> dist_x(0, width - size_components);
-  std::uniform_int_distribution<int> dist_y(0, height - size_components);
+  std::uniform_int_distribution<int> dist_x(0, width - size_y);
+  std::uniform_int_distribution<int> dist_y(0, height - size_x);
 
   std::vector<int> bin_vec(width * height);
 
   for (int i = 0; i < num_components; i++) {
     int x_start = dist_x(rng);
     int y_start = dist_y(rng);
-    for (int y = y_start; y < y_start + size_components && y < height; y++) {
-      for (int x = x_start; x < x_start + size_components && x < width; x++) {
+    for (int y = y_start; y < y_start + size_y && y < height; y++) {
+      for (int x = x_start; x < x_start + size_x && x < width; x++) {
         bin_vec[(y * width) + x] = 1;
       }
     }
@@ -136,7 +136,7 @@ bool IsHullSubset(Hull& hull_first, Hull& hull_second) {
 TEST(voroshilov_v_convex_hull_components_omp, chc_pipeline_run) {
   int height = 10'000;
   int width = 10'000;
-  std::vector<int> pixels = GenerateLargeComponents(width, height, 1000, 250);
+  std::vector<int> pixels = GenerateRectanglesComponents(width, height, 1000, 100, 500);
 
   int* p_height = &height;
   int* p_width = &width;
@@ -198,7 +198,7 @@ TEST(voroshilov_v_convex_hull_components_omp, chc_pipeline_run) {
 TEST(voroshilov_v_convex_hull_components_omp, chc_task_run) {
   int height = 10'000;
   int width = 10'000;
-  std::vector<int> pixels = GenerateLargeComponents(width, height, 1000, 250);
+  std::vector<int> pixels = GenerateRectanglesComponents(width, height, 1000, 100, 500);
 
   int* p_height = &height;
   int* p_width = &width;
