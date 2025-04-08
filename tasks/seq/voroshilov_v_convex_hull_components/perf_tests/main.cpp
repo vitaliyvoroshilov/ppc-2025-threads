@@ -20,7 +20,6 @@ using namespace voroshilov_v_convex_hull_components_seq;
 
 namespace {
 
-<<<<<<< HEAD
 std::vector<int> GenerateRectanglesComponents(int width, int height, int num_components, int size_y, int size_x) {
   std::mt19937 rng(std::random_device{}());
   std::uniform_int_distribution<int> dist_x(0, width - size_y);
@@ -36,15 +35,6 @@ std::vector<int> GenerateRectanglesComponents(int width, int height, int num_com
         bin_vec[(y * width) + x] = 1;
       }
     }
-=======
-std::vector<int> GenBinVec(int size) {
-  std::random_device dev;
-  std::mt19937 gen(dev());
-  std::vector<int> bin_vec(size);
-
-  for (int i = 0; i < size; i++) {
-    bin_vec[i] = static_cast<int>(gen() % 2);
->>>>>>> master
   }
 
   return bin_vec;
@@ -145,15 +135,9 @@ bool IsHullSubset(Hull& hull_first, Hull& hull_second) {
 }  // namespace
 
 TEST(voroshilov_v_convex_hull_components_seq, chc_pipeline_run) {
-<<<<<<< HEAD
   int height = 10'000;
   int width = 10'000;
   std::vector<int> pixels = GenerateRectanglesComponents(width, height, 1000, 100, 500);
-=======
-  std::vector<int> pixels = GenBinVec(10'000'000);
-  int height = 10'000;
-  int width = 1'000;
->>>>>>> master
 
   int* p_height = &height;
   int* p_width = &width;
@@ -173,11 +157,7 @@ TEST(voroshilov_v_convex_hull_components_seq, chc_pipeline_run) {
       std::make_shared<voroshilov_v_convex_hull_components_seq::ChcTaskSequential>(task_data_seq);
 
   auto perf_attr = std::make_shared<ppc::core::PerfAttr>();
-<<<<<<< HEAD
   perf_attr->num_running = 1;
-=======
-  perf_attr->num_running = 10;
->>>>>>> master
   const auto t0 = std::chrono::high_resolution_clock::now();
   perf_attr->current_timer = [&] {
     auto current_time_point = std::chrono::high_resolution_clock::now();
@@ -217,15 +197,9 @@ TEST(voroshilov_v_convex_hull_components_seq, chc_pipeline_run) {
 }
 
 TEST(voroshilov_v_convex_hull_components_seq, chc_task_run) {
-<<<<<<< HEAD
   int height = 10'000;
   int width = 10'000;
   std::vector<int> pixels = GenerateRectanglesComponents(width, height, 1000, 100, 500);
-=======
-  std::vector<int> pixels = GenBinVec(10'000'000);
-  int height = 10'000;
-  int width = 1'000;
->>>>>>> master
 
   int* p_height = &height;
   int* p_width = &width;
@@ -245,11 +219,7 @@ TEST(voroshilov_v_convex_hull_components_seq, chc_task_run) {
       std::make_shared<voroshilov_v_convex_hull_components_seq::ChcTaskSequential>(task_data_seq);
 
   auto perf_attr = std::make_shared<ppc::core::PerfAttr>();
-<<<<<<< HEAD
   perf_attr->num_running = 1;
-=======
-  perf_attr->num_running = 10;
->>>>>>> master
   const auto t0 = std::chrono::high_resolution_clock::now();
   perf_attr->current_timer = [&] {
     auto current_time_point = std::chrono::high_resolution_clock::now();
