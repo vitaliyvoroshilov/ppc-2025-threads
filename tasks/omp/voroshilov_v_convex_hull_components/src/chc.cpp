@@ -6,7 +6,6 @@
 #include <atomic>
 #include <cmath>
 #include <cstddef>
-#include <iostream>
 #include <stack>
 #include <unordered_map>
 #include <utility>
@@ -15,10 +14,10 @@
 using namespace voroshilov_v_convex_hull_components_omp;
 
 Pixel::Pixel(int y_param, int x_param) : y(y_param), x(x_param), value(0) {}
-NOINLINE Pixel::Pixel(int y_param, int x_param, int value_param) : y(y_param), x(x_param), value(value_param) {}
+Pixel::Pixel(int y_param, int x_param, int value_param) : y(y_param), x(x_param), value(value_param) {}
 
-NOINLINE bool Pixel::operator==(const int value_param) const { return value == value_param; }
-NOINLINE bool Pixel::operator==(const Pixel& other) const { return (y == other.y) && (x == other.x); }
+bool Pixel::operator==(const int value_param) const { return value == value_param; }
+bool Pixel::operator==(const Pixel& other) const { return (y == other.y) && (x == other.x); }
 
 Image::Image(int hght, int wdth, std::vector<int> pxls) {
   height = hght;
@@ -33,13 +32,9 @@ Image::Image(int hght, int wdth, std::vector<int> pxls) {
   }
 }
 
-NOINLINE Pixel& Image::GetPixel(int y, int x) { return pixels[(y * width) + x]; }
+Pixel& Image::GetPixel(int y, int x) { return pixels[(y * width) + x]; }
 
 LineSegment::LineSegment(Pixel& a_param, Pixel& b_param) : a(a_param), b(b_param) {}
-
-// Hull::Hull(std::vector<Pixel>& pxls) { pixels = pxls; }
-
-// bool Hull::operator==(const Hull& other) const { return pixels.pixels == other.pixels; }
 
 int UnionFind::FindRoot(int x) {
   if (roots.find(x) == roots.end()) {
@@ -146,10 +141,7 @@ Component voroshilov_v_convex_hull_components_omp::DepthComponentSearchInArea(Pi
     }
   }
 
-  Component component;
-  for (size_t i = 0; i < component_pixels.size(); i++) {
-    component.push_back(component_pixels[i]);
-  }
+  Component component(component_pixels);
 
   return component;
 }
@@ -180,8 +172,6 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
   Image tmp_image(image);
 
   int num_threads = omp_get_max_threads();
-
-  std::cout << "\n FindComponentsOMP(): omp_get_max_threads = " << num_threads << "\n\n";
 
   std::vector<std::vector<Component>> thread_components(num_threads);
 
@@ -218,11 +208,6 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
 
 #pragma omp parallel
   {
-#pragma omp single
-    {
-      std::cout << "\n parallel section in FindComponentsOMP(): omp_get_num_threads = " << omp_get_num_threads()
-                << "\n\n";
-    }
     int thread_id = omp_get_thread_num();
 
     thread_components[thread_id] =
@@ -246,7 +231,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
   return components;
 }
 
-NOINLINE double voroshilov_v_convex_hull_components_omp::CheckRotation(Pixel& first, Pixel& second, Pixel& third) {
+int voroshilov_v_convex_hull_components_omp::CheckRotation(Pixel& first, Pixel& second, Pixel& third) {
   return ((second.x - first.x) * (third.y - second.y)) - ((second.y - first.y) * (third.x - second.x));
 }
 
@@ -258,7 +243,7 @@ Pixel voroshilov_v_convex_hull_components_omp::FindFarthestPixel(std::vector<Pix
   for (Pixel& c : pixels) {
     Pixel a = line_segment.a;
     Pixel b = line_segment.b;
-    if (CheckRotation(a, b, c) < 0.0) {  // left rotation
+    if (CheckRotation(a, b, c) < 0) {  // left rotation
       double distance = std::abs(((b.x - a.x) * (a.y - c.y)) - ((a.x - c.x) * (b.y - a.y)));
       if (distance > max_dist) {
         max_dist = distance;
@@ -316,7 +301,7 @@ std::vector<Pixel> voroshilov_v_convex_hull_components_omp::QuickHull(Component&
 
   std::vector<Pixel> res_hull;
   for (size_t i = 0; i < hull.size(); i++) {
-    if (i == 0 || i == hull.size() - 1 || CheckRotation(hull[i - 1], hull[i], hull[i + 1]) != 0.0) {
+    if (i == 0 || i == hull.size() - 1 || CheckRotation(hull[i - 1], hull[i], hull[i + 1]) != 0) {
       res_hull.push_back(hull[i]);
     }
   }
@@ -331,8 +316,6 @@ std::vector<Hull> voroshilov_v_convex_hull_components_omp::QuickHullAllOMP(std::
 
   int components_size = static_cast<int>(components.size());
   std::vector<Hull> hulls(components.size());
-
-  std::cout << "\n QuickHullAllOMP(): omp_get_max_threads = " << omp_get_max_threads() << "\n\n";
 
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < components_size; i++) {

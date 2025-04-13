@@ -1,13 +1,5 @@
 #pragma once
 
-#if defined(_MSC_VER)
-#define NOINLINE __declspec(noinline)
-#elif defined(__GNUC__) || defined(__clang__)
-#define NOINLINE __attribute__((noinline))
-#else
-#define NOINLINE
-#endif
-
 #include <cstddef>
 #include <unordered_map>
 #include <utility>
@@ -22,12 +14,12 @@ struct Pixel {
 
   Pixel() = default;
   Pixel(int y_param, int x_param);
-  NOINLINE Pixel(int y_param, int x_param, int value_param);
+  Pixel(int y_param, int x_param, int value_param);
   Pixel(const Pixel& other) = default;
 
   Pixel& operator=(const Pixel& other) = default;
-  NOINLINE bool operator==(int value_param) const;
-  NOINLINE bool operator==(const Pixel& other) const;
+  bool operator==(int value_param) const;
+  bool operator==(const Pixel& other) const;
 };
 
 struct Image {
@@ -39,30 +31,18 @@ struct Image {
   Image(int hght, int wdth, std::vector<int> pxls);
   Image(const Image& other) = default;
   Image& operator=(const Image& other) = default;
-  NOINLINE Pixel& GetPixel(int y, int x);
+  Pixel& GetPixel(int y, int x);
 };
-
-/*struct Component {
-  std::vector<Pixel> pixels;
-};*/
 
 struct LineSegment {
   Pixel a;
   Pixel b;
 
-  NOINLINE LineSegment(Pixel& a_param, Pixel& b_param);
+  LineSegment(Pixel& a_param, Pixel& b_param);
 };
 
-/*struct Hull {
-  std::vector<Pixel> pixels;
-
-  Hull() = default;
-  Hull(std::vector<Pixel>& pxls);
-
-  bool operator==(const Hull& other) const;
-};*/
-
 using Component = std::vector<Pixel>;
+
 using Hull = std::vector<Pixel>;
 
 class UnionFind {
@@ -86,7 +66,7 @@ std::vector<Component> FindComponentsInArea(Image& tmp_image, int start_y, int e
 
 std::vector<Component> FindComponentsOMP(Image& image);
 
-NOINLINE double CheckRotation(Pixel& first, Pixel& second, Pixel& third);
+int CheckRotation(Pixel& first, Pixel& second, Pixel& third);
 
 Pixel FindFarthestPixel(std::vector<Pixel>& pixels, LineSegment& line_segment);
 

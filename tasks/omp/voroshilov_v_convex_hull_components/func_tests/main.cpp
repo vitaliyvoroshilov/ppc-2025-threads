@@ -10,10 +10,10 @@
 #include <opencv2/opencv.hpp>
 #endif
 
+#include "../include/chc.hpp"
+#include "../include/chc_omp.hpp"
 #include "core/task/include/task.hpp"
 #include "core/util/include/util.hpp"
-#include "omp/voroshilov_v_convex_hull_components_omp/include/chc.hpp"
-#include "omp/voroshilov_v_convex_hull_components_omp/include/chc_omp.hpp"
 
 using namespace voroshilov_v_convex_hull_components_omp;
 
@@ -166,27 +166,6 @@ bool ImageRunTest(std::string& src_path, std::string& exp_path) {
 #endif
 
 }  // namespace
-
-TEST(voroshilov_v_convex_hull_components_omp, ComponentTest1) {
-  Component component;
-
-  ASSERT_TRUE(component.empty());
-}
-
-TEST(voroshilov_v_convex_hull_components_omp, HullTest) {
-  Hull hull1 = {{0, 0}, {1, 1}, {2, 2}};
-  Hull hull2 = {{0, 0}, {1, 1}, {2, 2}};
-  Hull hull3 = {{0, 0}, {1, 1}, {3, 3}};
-
-  Hull hull4;
-
-  ASSERT_TRUE(hull1 == hull2);
-
-  ASSERT_FALSE(hull1 == hull3);
-
-  ASSERT_FALSE(hull1 == hull4);
-}
-
 TEST(voroshilov_v_convex_hull_components_omp, simpleValidationTest) {
   // clang-format off
   std::vector<int> pixels = 
@@ -325,71 +304,71 @@ TEST(voroshilov_v_convex_hull_components_omp, simpleTest5Components) {
 #ifndef _WIN32
 
 TEST(voroshilov_v_convex_hull_components_omp, imageTest0) {
-  std::string src_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components_omp/data/0_image.png");
-  std::string exp_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components_omp/data/0_expected.png");
+  std::string src_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components/data/0_image.png");
+  std::string exp_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components/data/0_expected.png");
 
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }
 
 TEST(voroshilov_v_convex_hull_components_omp, imageTest0Incorrect) {
-  std::string src_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components_omp/data/0_image.png");
-  std::string inc_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components_omp/data/0_incorrect.png");
+  std::string src_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components/data/0_image.png");
+  std::string inc_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components/data/0_incorrect.png");
 
   ASSERT_FALSE(ImageRunTest(src_path, inc_path));
 }
 
 TEST(voroshilov_v_convex_hull_components_omp, imageTest1) {
-  std::string src_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components_omp/data/1_image.png");
-  std::string exp_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components_omp/data/1_expected.png");
+  std::string src_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components/data/1_image.png");
+  std::string exp_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components/data/1_expected.png");
 
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }
 
 TEST(voroshilov_v_convex_hull_components_omp, imageTest1Incorrect) {
-  std::string src_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components_omp/data/1_image.png");
-  std::string inc_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components_omp/data/1_incorrect.png");
+  std::string src_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components/data/1_image.png");
+  std::string inc_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components/data/1_incorrect.png");
 
   ASSERT_FALSE(ImageRunTest(src_path, inc_path));
 }
 
 TEST(voroshilov_v_convex_hull_components_omp, imageTest2) {
-  std::string src_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components_omp/data/2_image.png");
-  std::string exp_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components_omp/data/2_expected.png");
+  std::string src_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components/data/2_image.png");
+  std::string exp_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components/data/2_expected.png");
 
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }
 
 TEST(voroshilov_v_convex_hull_components_omp, imageTest3) {
-  std::string src_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components_omp/data/3_image.png");
-  std::string exp_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components_omp/data/3_expected.png");
+  std::string src_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components/data/3_image.png");
+  std::string exp_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components/data/3_expected.png");
 
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }
 
 TEST(voroshilov_v_convex_hull_components_omp, imageTest4) {
-  std::string src_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components_omp/data/4_image.png");
-  std::string exp_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components_omp/data/4_expected.png");
+  std::string src_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components/data/4_image.png");
+  std::string exp_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components/data/4_expected.png");
 
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }
 
 TEST(voroshilov_v_convex_hull_components_omp, imageTest5) {
-  std::string src_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components_omp/data/5_image.png");
-  std::string exp_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components_omp/data/5_expected.png");
+  std::string src_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components/data/5_image.png");
+  std::string exp_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components/data/5_expected.png");
 
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }
 
 TEST(voroshilov_v_convex_hull_components_omp, imageTest6) {
-  std::string src_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components_omp/data/6_image.png");
-  std::string exp_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components_omp/data/6_expected.png");
+  std::string src_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components/data/6_image.png");
+  std::string exp_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components/data/6_expected.png");
 
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }
 
 TEST(voroshilov_v_convex_hull_components_omp, imageTest7) {
-  std::string src_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components_omp/data/7_image.png");
-  std::string exp_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components_omp/data/7_expected.png");
+  std::string src_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components/data/7_image.png");
+  std::string exp_path = ppc::util::GetAbsolutePath("omp/voroshilov_v_convex_hull_components/data/7_expected.png");
 
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }
