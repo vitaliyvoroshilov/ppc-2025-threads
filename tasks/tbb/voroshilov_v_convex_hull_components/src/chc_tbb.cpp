@@ -1,9 +1,10 @@
+#include "../include/chc_tbb.hpp"
+
 #include <algorithm>
 #include <utility>
 #include <vector>
 
 #include "../include/chc.hpp"
-#include "../include/chc_tbb.hpp"
 
 using namespace voroshilov_v_convex_hull_components_tbb;
 
