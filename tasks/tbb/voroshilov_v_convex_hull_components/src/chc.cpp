@@ -1,7 +1,5 @@
 #include "../include/chc.hpp"
 
-#include <omp.h>
-
 #include <algorithm>
 #include <atomic>
 #include <cmath>

@@ -135,24 +135,24 @@ bool IsHullSubset(Hull& hull_first, Hull& hull_second) {
 
 TEST(voroshilov_v_convex_hull_components_tbb, chc_pipeline_run) {
   int height = 10'000;
-  int width = 1'000;
-  std::vector<int> pixels = GenerateRectanglesComponents(width, height, 1000, 100, 100);
+  int width = 10'000;
+  std::vector<int> pixels = GenerateRectanglesComponents(width, height, 1000, 100, 500);
 
   int* p_height = &height;
   int* p_width = &width;
   std::vector<int> hulls_indexes_out(height * width);
   std::vector<int> pixels_indexes_out(height * width);
 
-  auto task_data_omp = std::make_shared<ppc::core::TaskData>();
-  task_data_omp->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
-  task_data_omp->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_width));
-  task_data_omp->inputs.emplace_back(reinterpret_cast<uint8_t*>(pixels.data()));
-  task_data_omp->inputs_count.emplace_back(pixels.size());
-  task_data_omp->outputs.emplace_back(reinterpret_cast<uint8_t*>(hulls_indexes_out.data()));
-  task_data_omp->outputs.emplace_back(reinterpret_cast<uint8_t*>(pixels_indexes_out.data()));
-  task_data_omp->outputs_count.emplace_back(0);
+  auto task_data = std::make_shared<ppc::core::TaskData>();
+  task_data->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
+  task_data->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_width));
+  task_data->inputs.emplace_back(reinterpret_cast<uint8_t*>(pixels.data()));
+  task_data->inputs_count.emplace_back(pixels.size());
+  task_data->outputs.emplace_back(reinterpret_cast<uint8_t*>(hulls_indexes_out.data()));
+  task_data->outputs.emplace_back(reinterpret_cast<uint8_t*>(pixels_indexes_out.data()));
+  task_data->outputs_count.emplace_back(0);
 
-  auto chc_task_omp = std::make_shared<voroshilov_v_convex_hull_components_tbb::ChcTaskOMP>(task_data_omp);
+  auto chc_task = std::make_shared<voroshilov_v_convex_hull_components_tbb::ChcTaskTBB>(task_data);
 
   auto perf_attr = std::make_shared<ppc::core::PerfAttr>();
   perf_attr->num_running = 1;
@@ -165,11 +165,11 @@ TEST(voroshilov_v_convex_hull_components_tbb, chc_pipeline_run) {
 
   auto perf_results = std::make_shared<ppc::core::PerfResults>();
 
-  auto perf_analyzer = std::make_shared<ppc::core::Perf>(chc_task_omp);
+  auto perf_analyzer = std::make_shared<ppc::core::Perf>(chc_task);
   perf_analyzer->PipelineRun(perf_attr, perf_results);
   ppc::core::Perf::PrintPerfStatistic(perf_results);
 
-  int hulls_size = static_cast<int>(task_data_omp->outputs_count[0]);
+  int hulls_size = static_cast<int>(task_data->outputs_count[0]);
 
   std::vector<Hull> hulls = UnpackHulls(hulls_indexes_out, pixels_indexes_out, height, width, hulls_size);
 
@@ -197,24 +197,24 @@ TEST(voroshilov_v_convex_hull_components_tbb, chc_pipeline_run) {
 
 TEST(voroshilov_v_convex_hull_components_tbb, chc_task_run) {
   int height = 10'000;
-  int width = 1'000;
-  std::vector<int> pixels = GenerateRectanglesComponents(width, height, 1000, 100, 100);
+  int width = 10'000;
+  std::vector<int> pixels = GenerateRectanglesComponents(width, height, 1000, 100, 500);
 
   int* p_height = &height;
   int* p_width = &width;
   std::vector<int> hulls_indexes_out(height * width);
   std::vector<int> pixels_indexes_out(height * width);
 
-  auto task_data_omp = std::make_shared<ppc::core::TaskData>();
-  task_data_omp->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
-  task_data_omp->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_width));
-  task_data_omp->inputs.emplace_back(reinterpret_cast<uint8_t*>(pixels.data()));
-  task_data_omp->inputs_count.emplace_back(pixels.size());
-  task_data_omp->outputs.emplace_back(reinterpret_cast<uint8_t*>(hulls_indexes_out.data()));
-  task_data_omp->outputs.emplace_back(reinterpret_cast<uint8_t*>(pixels_indexes_out.data()));
-  task_data_omp->outputs_count.emplace_back(0);
+  auto task_data = std::make_shared<ppc::core::TaskData>();
+  task_data->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
+  task_data->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_width));
+  task_data->inputs.emplace_back(reinterpret_cast<uint8_t*>(pixels.data()));
+  task_data->inputs_count.emplace_back(pixels.size());
+  task_data->outputs.emplace_back(reinterpret_cast<uint8_t*>(hulls_indexes_out.data()));
+  task_data->outputs.emplace_back(reinterpret_cast<uint8_t*>(pixels_indexes_out.data()));
+  task_data->outputs_count.emplace_back(0);
 
-  auto chc_task_omp = std::make_shared<voroshilov_v_convex_hull_components_tbb::ChcTaskOMP>(task_data_omp);
+  auto chc_task = std::make_shared<voroshilov_v_convex_hull_components_tbb::ChcTaskTBB>(task_data);
 
   auto perf_attr = std::make_shared<ppc::core::PerfAttr>();
   perf_attr->num_running = 1;
@@ -227,11 +227,11 @@ TEST(voroshilov_v_convex_hull_components_tbb, chc_task_run) {
 
   auto perf_results = std::make_shared<ppc::core::PerfResults>();
 
-  auto perf_analyzer = std::make_shared<ppc::core::Perf>(chc_task_omp);
+  auto perf_analyzer = std::make_shared<ppc::core::Perf>(chc_task);
   perf_analyzer->TaskRun(perf_attr, perf_results);
   ppc::core::Perf::PrintPerfStatistic(perf_results);
 
-  int hulls_size = static_cast<int>(task_data_omp->outputs_count[0]);
+  int hulls_size = static_cast<int>(task_data->outputs_count[0]);
   std::vector<Hull> hulls = UnpackHulls(hulls_indexes_out, pixels_indexes_out, height, width, hulls_size);
 
 #ifndef _WIN32

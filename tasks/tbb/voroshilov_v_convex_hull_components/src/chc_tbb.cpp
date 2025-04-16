@@ -7,7 +7,7 @@
 
 using namespace voroshilov_v_convex_hull_components_tbb;
 
-bool voroshilov_v_convex_hull_components_tbb::ChcTaskOMP::ValidationImpl() {
+bool voroshilov_v_convex_hull_components_tbb::ChcTaskTBB::ValidationImpl() {
   int *ptr = reinterpret_cast<int *>(task_data->inputs[0]);
   int height = *ptr;
   ptr = reinterpret_cast<int *>(task_data->inputs[1]);
@@ -16,7 +16,7 @@ bool voroshilov_v_convex_hull_components_tbb::ChcTaskOMP::ValidationImpl() {
   return height > 0 && width > 0 && (height * width) == pixels_size;
 }
 
-bool voroshilov_v_convex_hull_components_tbb::ChcTaskOMP::PreProcessingImpl() {
+bool voroshilov_v_convex_hull_components_tbb::ChcTaskTBB::PreProcessingImpl() {
   int *ptr = reinterpret_cast<int *>(task_data->inputs[0]);
   int height = *ptr;
 
@@ -33,7 +33,7 @@ bool voroshilov_v_convex_hull_components_tbb::ChcTaskOMP::PreProcessingImpl() {
   return true;
 }
 
-bool voroshilov_v_convex_hull_components_tbb::ChcTaskOMP::RunImpl() {
+bool voroshilov_v_convex_hull_components_tbb::ChcTaskTBB::RunImpl() {
   std::vector<Component> components = FindComponentsTBB(imageIn_);
 
   hullsOut_ = QuickHullAllTBB(components);
@@ -41,7 +41,7 @@ bool voroshilov_v_convex_hull_components_tbb::ChcTaskOMP::RunImpl() {
   return true;
 }
 
-bool voroshilov_v_convex_hull_components_tbb::ChcTaskOMP::PostProcessingImpl() {
+bool voroshilov_v_convex_hull_components_tbb::ChcTaskTBB::PostProcessingImpl() {
   std::pair<std::vector<int>, std::vector<int>> packed_out = PackHulls(hullsOut_, imageIn_);
   std::vector<int> hulls_indexes = packed_out.first;
   std::vector<int> pixels_indexes = packed_out.second;
