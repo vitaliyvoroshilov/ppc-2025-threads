@@ -8,9 +8,9 @@
 
 namespace voroshilov_v_convex_hull_components_tbb {
 
-class ChcTaskOMP : public ppc::core::Task {
+class ChcTaskTBB : public ppc::core::Task {
  public:
-  explicit ChcTaskOMP(ppc::core::TaskDataPtr task_data) : Task(std::move(task_data)) {}
+  explicit ChcTaskTBB(ppc::core::TaskDataPtr task_data) : Task(std::move(task_data)) {}
   bool ValidationImpl() override;
   bool PreProcessingImpl() override;
   bool RunImpl() override;
