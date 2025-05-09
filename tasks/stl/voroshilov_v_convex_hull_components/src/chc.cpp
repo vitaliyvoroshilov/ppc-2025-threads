@@ -24,13 +24,13 @@ Image::Image(int hght, int wdth, std::vector<int> pxls) {
   pixels.resize(height * width);
 
   size_t num_threads = std::thread::hardware_concurrency();
-  int chunk = (height + num_threads - 1) / num_threads;
+  size_t chunk = (height + num_threads - 1) / num_threads;
   std::vector<std::thread> threads;
 
   for (size_t t = 0; t < num_threads; t++) {
-    int y1 = t * chunk;
-    int y2 = std::min(y1 + chunk, height);
-    threads.emplace_back([=, &pxls]() {
+    size_t y1 = t * chunk;
+    size_t y2 = std::min(y1 + chunk, static_cast<size_t>(height));
+    threads.emplace_back([this, y1, y2, &pxls]() {
       for (int y = y1; y < y2; y++) {
         for (int x = 0; x < width; x++) {
           pixels[(y * width) + x] = Pixel(y, x, pxls[(y * width) + x]);
@@ -185,7 +185,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_stl::FindComponentsST
   int height = tmp_image.height;
 
   std::vector<std::thread> threads;
-  int num_threads = std::thread::hardware_concurrency();
+  size_t num_threads = std::thread::hardware_concurrency();
   std::vector<std::vector<Component>> local_components(num_threads);
   int chunk_height = (height + num_threads - 1) / num_threads;
   std::vector<int> y2(num_threads);
@@ -196,9 +196,9 @@ std::vector<Component> voroshilov_v_convex_hull_components_stl::FindComponentsST
   }
 
   for (size_t t = 0; t < num_threads; t++) {
-    int y1 = t * chunk_height;
+    size_t y1 = t * chunk_height;
     threads.emplace_back([&, t, y1]() {
-      y2[t] = std::min(y1 + chunk_height, height);
+      y2[t] = std::min(y1 + chunk_height, static_cast<size_t>(height));
       local_components[t] = FindComponentsInArea(tmp_image, y1, y2[t], index_offset[t]);
     });
   }
