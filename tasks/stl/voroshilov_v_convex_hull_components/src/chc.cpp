@@ -31,7 +31,7 @@ Image::Image(int hght, int wdth, std::vector<int> pxls) {
     size_t y1 = t * chunk;
     size_t y2 = std::min(y1 + chunk, static_cast<size_t>(height));
     threads.emplace_back([this, y1, y2, &pxls]() {
-      for (int y = y1; y < y2; y++) {
+      for (size_t y = y1; y < y2; y++) {
         for (int x = 0; x < width; x++) {
           pixels[(y * width) + x] = Pixel(y, x, pxls[(y * width) + x]);
         }
@@ -191,7 +191,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_stl::FindComponentsST
   std::vector<int> y2(num_threads);
 
   std::vector<int> index_offset(num_threads);
-  for (int i = 0; i < num_threads; i++) {
+  for (size_t i = 0; i < num_threads; i++) {
     index_offset[i] = (i * 100000) + 2;
   }
 
