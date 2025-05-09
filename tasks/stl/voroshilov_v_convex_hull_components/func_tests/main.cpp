@@ -36,17 +36,17 @@ bool ValidationTest(int height, int width, std::vector<int>& pixels) {
   std::vector<int> hulls_indexes_out(height * width);
   std::vector<int> pixels_indexes_out(height * width);
 
-  auto task_data = std::make_shared<ppc::core::TaskData>();
-  task_data->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
-  task_data->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_width));
-  task_data->inputs.emplace_back(reinterpret_cast<uint8_t*>(pixels.data()));
-  task_data->inputs_count.emplace_back(pixels.size());
-  task_data->outputs.emplace_back(reinterpret_cast<uint8_t*>(hulls_indexes_out.data()));
-  task_data->outputs.emplace_back(reinterpret_cast<uint8_t*>(pixels_indexes_out.data()));
-  task_data->outputs_count.emplace_back(0);
+  auto task_data_stl = std::make_shared<ppc::core::TaskData>();
+  task_data_stl->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
+  task_data_stl->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_width));
+  task_data_stl->inputs.emplace_back(reinterpret_cast<uint8_t*>(pixels.data()));
+  task_data_stl->inputs_count.emplace_back(pixels.size());
+  task_data_stl->outputs.emplace_back(reinterpret_cast<uint8_t*>(hulls_indexes_out.data()));
+  task_data_stl->outputs.emplace_back(reinterpret_cast<uint8_t*>(pixels_indexes_out.data()));
+  task_data_stl->outputs_count.emplace_back(0);
 
-  ChcTaskTBB chc_task(task_data);
-  return chc_task.ValidationImpl();
+  ChcTaskSTL chc_task_stl(task_data_stl);
+  return chc_task_stl.ValidationImpl();
 }
 
 std::vector<Hull> SimpleRunTest(int height, int width, std::vector<int>& pixels) {
@@ -55,22 +55,22 @@ std::vector<Hull> SimpleRunTest(int height, int width, std::vector<int>& pixels)
   std::vector<int> hulls_indexes_out(height * width);
   std::vector<int> pixels_indexes_out(height * width);
 
-  auto task_data = std::make_shared<ppc::core::TaskData>();
-  task_data->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
-  task_data->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_width));
-  task_data->inputs.emplace_back(reinterpret_cast<uint8_t*>(pixels.data()));
-  task_data->inputs_count.emplace_back(pixels.size());
-  task_data->outputs.emplace_back(reinterpret_cast<uint8_t*>(hulls_indexes_out.data()));
-  task_data->outputs.emplace_back(reinterpret_cast<uint8_t*>(pixels_indexes_out.data()));
-  task_data->outputs_count.emplace_back(0);
+  auto task_data_stl = std::make_shared<ppc::core::TaskData>();
+  task_data_stl->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
+  task_data_stl->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_width));
+  task_data_stl->inputs.emplace_back(reinterpret_cast<uint8_t*>(pixels.data()));
+  task_data_stl->inputs_count.emplace_back(pixels.size());
+  task_data_stl->outputs.emplace_back(reinterpret_cast<uint8_t*>(hulls_indexes_out.data()));
+  task_data_stl->outputs.emplace_back(reinterpret_cast<uint8_t*>(pixels_indexes_out.data()));
+  task_data_stl->outputs_count.emplace_back(0);
 
-  ChcTaskTBB chc_task(task_data);
-  chc_task.ValidationImpl();
-  chc_task.PreProcessingImpl();
-  chc_task.RunImpl();
-  chc_task.PostProcessingImpl();
+  ChcTaskSTL chc_task_stl(task_data_stl);
+  chc_task_stl.ValidationImpl();
+  chc_task_stl.PreProcessingImpl();
+  chc_task_stl.RunImpl();
+  chc_task_stl.PostProcessingImpl();
 
-  int hulls_size = static_cast<int>(task_data->outputs_count[0]);
+  int hulls_size = static_cast<int>(task_data_stl->outputs_count[0]);
   std::vector<Hull> hulls = UnpackHulls(hulls_indexes_out, pixels_indexes_out, height, width, hulls_size);
 
   return hulls;
@@ -108,22 +108,22 @@ bool ImageRunTest(std::string& src_path, std::string& exp_path) {
   std::vector<int> hulls_indexes_out(height * width);
   std::vector<int> pixels_indexes_out(height * width);
 
-  auto task_data = std::make_shared<ppc::core::TaskData>();
-  task_data->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
-  task_data->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_width));
-  task_data->inputs.emplace_back(reinterpret_cast<uint8_t*>(pixels.data()));
-  task_data->inputs_count.emplace_back(pixels.size());
-  task_data->outputs.emplace_back(reinterpret_cast<uint8_t*>(hulls_indexes_out.data()));
-  task_data->outputs.emplace_back(reinterpret_cast<uint8_t*>(pixels_indexes_out.data()));
-  task_data->outputs_count.emplace_back(0);
+  auto task_data_stl = std::make_shared<ppc::core::TaskData>();
+  task_data_stl->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
+  task_data_stl->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_width));
+  task_data_stl->inputs.emplace_back(reinterpret_cast<uint8_t*>(pixels.data()));
+  task_data_stl->inputs_count.emplace_back(pixels.size());
+  task_data_stl->outputs.emplace_back(reinterpret_cast<uint8_t*>(hulls_indexes_out.data()));
+  task_data_stl->outputs.emplace_back(reinterpret_cast<uint8_t*>(pixels_indexes_out.data()));
+  task_data_stl->outputs_count.emplace_back(0);
 
-  ChcTaskTBB chc_task(task_data);
-  chc_task.ValidationImpl();
-  chc_task.PreProcessingImpl();
-  chc_task.RunImpl();
-  chc_task.PostProcessingImpl();
+  ChcTaskSTL chc_task_stl(task_data_stl);
+  chc_task_stl.ValidationImpl();
+  chc_task_stl.PreProcessingImpl();
+  chc_task_stl.RunImpl();
+  chc_task_stl.PostProcessingImpl();
 
-  int hulls_size = static_cast<int>(task_data->outputs_count[0]);
+  int hulls_size = static_cast<int>(task_data_stl->outputs_count[0]);
   std::vector<Hull> hulls = UnpackHulls(hulls_indexes_out, pixels_indexes_out, height, width, hulls_size);
 
   // Draw hulls on source image:
@@ -304,71 +304,71 @@ TEST(voroshilov_v_convex_hull_components_stl, simpleTest5Components) {
 #ifndef _WIN32
 
 TEST(voroshilov_v_convex_hull_components_stl, imageTest0) {
-  std::string src_path = ppc::util::GetAbsolutePath("tbb/voroshilov_v_convex_hull_components/data/0_image.png");
-  std::string exp_path = ppc::util::GetAbsolutePath("tbb/voroshilov_v_convex_hull_components/data/0_expected.png");
+  std::string src_path = ppc::util::GetAbsolutePath("stl/voroshilov_v_convex_hull_components/data/0_image.png");
+  std::string exp_path = ppc::util::GetAbsolutePath("stl/voroshilov_v_convex_hull_components/data/0_expected.png");
 
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }
 
 TEST(voroshilov_v_convex_hull_components_stl, imageTest0Incorrect) {
-  std::string src_path = ppc::util::GetAbsolutePath("tbb/voroshilov_v_convex_hull_components/data/0_image.png");
-  std::string inc_path = ppc::util::GetAbsolutePath("tbb/voroshilov_v_convex_hull_components/data/0_incorrect.png");
+  std::string src_path = ppc::util::GetAbsolutePath("stl/voroshilov_v_convex_hull_components/data/0_image.png");
+  std::string inc_path = ppc::util::GetAbsolutePath("stl/voroshilov_v_convex_hull_components/data/0_incorrect.png");
 
   ASSERT_FALSE(ImageRunTest(src_path, inc_path));
 }
 
 TEST(voroshilov_v_convex_hull_components_stl, imageTest1) {
-  std::string src_path = ppc::util::GetAbsolutePath("tbb/voroshilov_v_convex_hull_components/data/1_image.png");
-  std::string exp_path = ppc::util::GetAbsolutePath("tbb/voroshilov_v_convex_hull_components/data/1_expected.png");
+  std::string src_path = ppc::util::GetAbsolutePath("stl/voroshilov_v_convex_hull_components/data/1_image.png");
+  std::string exp_path = ppc::util::GetAbsolutePath("stl/voroshilov_v_convex_hull_components/data/1_expected.png");
 
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }
 
 TEST(voroshilov_v_convex_hull_components_stl, imageTest1Incorrect) {
-  std::string src_path = ppc::util::GetAbsolutePath("tbb/voroshilov_v_convex_hull_components/data/1_image.png");
-  std::string inc_path = ppc::util::GetAbsolutePath("tbb/voroshilov_v_convex_hull_components/data/1_incorrect.png");
+  std::string src_path = ppc::util::GetAbsolutePath("stl/voroshilov_v_convex_hull_components/data/1_image.png");
+  std::string inc_path = ppc::util::GetAbsolutePath("stl/voroshilov_v_convex_hull_components/data/1_incorrect.png");
 
   ASSERT_FALSE(ImageRunTest(src_path, inc_path));
 }
 
 TEST(voroshilov_v_convex_hull_components_stl, imageTest2) {
-  std::string src_path = ppc::util::GetAbsolutePath("tbb/voroshilov_v_convex_hull_components/data/2_image.png");
-  std::string exp_path = ppc::util::GetAbsolutePath("tbb/voroshilov_v_convex_hull_components/data/2_expected.png");
+  std::string src_path = ppc::util::GetAbsolutePath("stl/voroshilov_v_convex_hull_components/data/2_image.png");
+  std::string exp_path = ppc::util::GetAbsolutePath("stl/voroshilov_v_convex_hull_components/data/2_expected.png");
 
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }
 
 TEST(voroshilov_v_convex_hull_components_stl, imageTest3) {
-  std::string src_path = ppc::util::GetAbsolutePath("tbb/voroshilov_v_convex_hull_components/data/3_image.png");
-  std::string exp_path = ppc::util::GetAbsolutePath("tbb/voroshilov_v_convex_hull_components/data/3_expected.png");
+  std::string src_path = ppc::util::GetAbsolutePath("stl/voroshilov_v_convex_hull_components/data/3_image.png");
+  std::string exp_path = ppc::util::GetAbsolutePath("stl/voroshilov_v_convex_hull_components/data/3_expected.png");
 
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }
 
 TEST(voroshilov_v_convex_hull_components_stl, imageTest4) {
-  std::string src_path = ppc::util::GetAbsolutePath("tbb/voroshilov_v_convex_hull_components/data/4_image.png");
-  std::string exp_path = ppc::util::GetAbsolutePath("tbb/voroshilov_v_convex_hull_components/data/4_expected.png");
+  std::string src_path = ppc::util::GetAbsolutePath("stl/voroshilov_v_convex_hull_components/data/4_image.png");
+  std::string exp_path = ppc::util::GetAbsolutePath("stl/voroshilov_v_convex_hull_components/data/4_expected.png");
 
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }
 
 TEST(voroshilov_v_convex_hull_components_stl, imageTest5) {
-  std::string src_path = ppc::util::GetAbsolutePath("tbb/voroshilov_v_convex_hull_components/data/5_image.png");
-  std::string exp_path = ppc::util::GetAbsolutePath("tbb/voroshilov_v_convex_hull_components/data/5_expected.png");
+  std::string src_path = ppc::util::GetAbsolutePath("stl/voroshilov_v_convex_hull_components/data/5_image.png");
+  std::string exp_path = ppc::util::GetAbsolutePath("stl/voroshilov_v_convex_hull_components/data/5_expected.png");
 
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }
 
 TEST(voroshilov_v_convex_hull_components_stl, imageTest6) {
-  std::string src_path = ppc::util::GetAbsolutePath("tbb/voroshilov_v_convex_hull_components/data/6_image.png");
-  std::string exp_path = ppc::util::GetAbsolutePath("tbb/voroshilov_v_convex_hull_components/data/6_expected.png");
+  std::string src_path = ppc::util::GetAbsolutePath("stl/voroshilov_v_convex_hull_components/data/6_image.png");
+  std::string exp_path = ppc::util::GetAbsolutePath("stl/voroshilov_v_convex_hull_components/data/6_expected.png");
 
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }
 
 TEST(voroshilov_v_convex_hull_components_stl, imageTest7) {
-  std::string src_path = ppc::util::GetAbsolutePath("tbb/voroshilov_v_convex_hull_components/data/7_image.png");
-  std::string exp_path = ppc::util::GetAbsolutePath("tbb/voroshilov_v_convex_hull_components/data/7_expected.png");
+  std::string src_path = ppc::util::GetAbsolutePath("stl/voroshilov_v_convex_hull_components/data/7_image.png");
+  std::string exp_path = ppc::util::GetAbsolutePath("stl/voroshilov_v_convex_hull_components/data/7_expected.png");
 
   ASSERT_TRUE(ImageRunTest(src_path, exp_path));
 }

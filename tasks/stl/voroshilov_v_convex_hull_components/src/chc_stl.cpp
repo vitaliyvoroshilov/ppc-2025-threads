@@ -35,9 +35,9 @@ bool voroshilov_v_convex_hull_components_stl::ChcTaskSTL::PreProcessingImpl() {
 }
 
 bool voroshilov_v_convex_hull_components_stl::ChcTaskSTL::RunImpl() {
-  std::vector<Component> components = FindComponentsTBB(imageIn_);
+  std::vector<Component> components = FindComponentsSTL(imageIn_);
 
-  hullsOut_ = QuickHullAllTBB(components);
+  hullsOut_ = QuickHullAllSTL(components);
 
   return true;
 }

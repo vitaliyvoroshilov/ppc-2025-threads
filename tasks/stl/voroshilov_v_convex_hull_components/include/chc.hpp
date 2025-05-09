@@ -64,7 +64,7 @@ Component DepthComponentSearchInArea(Pixel start_pixel, Image* tmp_image, int in
 
 std::vector<Component> FindComponentsInArea(Image& tmp_image, int start_y, int end_y, int index_offset);
 
-std::vector<Component> FindComponentsTBB(Image& image);
+std::vector<Component> FindComponentsSTL(Image& image);
 
 int CheckRotation(Pixel& first, Pixel& second, Pixel& third);
 
@@ -72,11 +72,11 @@ Pixel FindFarthestPixel(std::vector<Pixel>& pixels, LineSegment& line_segment);
 
 std::vector<Pixel> QuickHull(Component& component);
 
-std::vector<Hull> QuickHullAllTBB(std::vector<Component>& components);
+std::vector<Hull> QuickHullAllSTL(std::vector<Component>& components);
 
 std::pair<std::vector<int>, std::vector<int>> PackHulls(std::vector<Hull>& hulls, Image& image);
 
 std::vector<Hull> UnpackHulls(std::vector<int>& hulls_indexes, std::vector<int>& pixels_indexes, int height, int width,
                               size_t hulls_size);
 
-}  // namespace voroshilov_v_convex_hull_components_tbb
+}  // namespace voroshilov_v_convex_hull_components_stl

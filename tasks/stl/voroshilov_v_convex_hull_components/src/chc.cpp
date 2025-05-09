@@ -5,13 +5,10 @@
 #include <cmath>
 #include <cstddef>
 #include <stack>
+#include <thread>
 #include <unordered_map>
 #include <utility>
 #include <vector>
-
-#include "core/util/include/util.hpp"
-#include "oneapi/tbb/parallel_for.h"
-#include "oneapi/tbb/task_arena.h"
 
 using namespace voroshilov_v_convex_hull_components_stl;
 
@@ -26,16 +23,25 @@ Image::Image(int hght, int wdth, std::vector<int> pxls) {
   width = wdth;
   pixels.resize(height * width);
 
-  int num_threads = ppc::util::GetPPCNumThreads();
-  oneapi::tbb::task_arena arena(num_threads);
+  size_t num_threads = std::thread::hardware_concurrency();
+  int chunk = (height + num_threads - 1) / num_threads;
+  std::vector<std::thread> threads;
 
-  arena.execute([&] {
-    oneapi::tbb::parallel_for(0, height, [&](int y) {
-      for (int x = 0; x < width; x++) {
-        pixels[(y * width) + x] = Pixel(y, x, pxls[(y * width) + x]);
+  for (size_t t = 0; t < num_threads; t++) {
+    int y1 = t * chunk;
+    int y2 = std::min(y1 + chunk, height);
+    threads.emplace_back([=, &pxls]() {
+      for (int y = y1; y < y2; y++) {
+        for (int x = 0; x < width; x++) {
+          pixels[(y * width) + x] = Pixel(y, x, pxls[(y * width) + x]);
+        }
       }
     });
-  });
+  }
+
+  for (auto& th : threads) {
+    th.join();
+  }
 }
 
 Pixel& Image::GetPixel(int y, int x) { return pixels[(y * width) + x]; }
@@ -174,69 +180,57 @@ std::vector<Component> voroshilov_v_convex_hull_components_stl::FindComponentsIn
   return components;
 }
 
-std::vector<Component> voroshilov_v_convex_hull_components_stl::FindComponentsTBB(Image& image) {
+std::vector<Component> voroshilov_v_convex_hull_components_stl::FindComponentsSTL(Image& image) {
   Image tmp_image(image);
-
-  int num_threads = ppc::util::GetPPCNumThreads();
-
-  std::vector<std::vector<Component>> thread_components(num_threads);
-
   int height = tmp_image.height;
 
-  int area_height = height / num_threads;
-  int remainder = height % num_threads;
-  std::vector<int> start_y(num_threads);
-  std::vector<int> end_y(num_threads);
+  std::vector<std::thread> threads;
+  int num_threads = std::thread::hardware_concurrency();
+  std::vector<std::vector<Component>> local_components(num_threads);
+  int chunk_height = (height + num_threads - 1) / num_threads;
+  std::vector<int> y2(num_threads);
+
   std::vector<int> index_offset(num_threads);
-
-  if (num_threads == 1) {
-    start_y[0] = 0;
-    end_y[0] = height;
-    index_offset[0] = 2;
-  } else {
-    for (size_t i = 1; i < start_y.size(); i++) {
-      start_y[i] = start_y[i - 1] + area_height;
-      if (remainder > 0) {
-        start_y[i]++;
-        remainder--;
-      }
-    }
-
-    for (size_t i = 0; i < end_y.size() - 1; i++) {
-      end_y[i] = start_y[i + 1];
-    }
-    end_y[end_y.size() - 1] = height;
-
-    for (int i = 0; i < num_threads; i++) {
-      index_offset[i] = (i * 100000) + 2;
-    }
+  for (int i = 0; i < num_threads; i++) {
+    index_offset[i] = (i * 100000) + 2;
   }
 
-  oneapi::tbb::task_arena arena(num_threads);
-
-  arena.execute([&] {
-    oneapi::tbb::parallel_for(0, num_threads, [&](int thread_id) {
-      thread_components[thread_id] =
-          FindComponentsInArea(tmp_image, start_y[thread_id], end_y[thread_id], index_offset[thread_id]);
+  for (size_t t = 0; t < num_threads; t++) {
+    int y1 = t * chunk_height;
+    threads.emplace_back([&, t, y1]() {
+      y2[t] = std::min(y1 + chunk_height, height);
+      local_components[t] = FindComponentsInArea(tmp_image, y1, y2[t], index_offset[t]);
     });
-  });
+  }
+
+  for (auto& th : threads) {
+    th.join();
+  }
+  threads.clear();
 
   std::vector<Component> components;
-  for (std::vector<Component>& vec : thread_components) {
+  for (std::vector<Component>& vec : local_components) {
     components.insert(components.end(), vec.begin(), vec.end());
   }
 
-  MergeComponentsAcrossAreas(components, tmp_image, area_height, end_y);
+  MergeComponentsAcrossAreas(components, tmp_image, chunk_height, y2);
 
-  int size = static_cast<int>(components.size());
-
-  arena.execute([&] {
-    oneapi::tbb::parallel_for(0, size, [&](int i) {
-      std::ranges::sort(components[i], [](const Pixel& p1, const Pixel& p2) {
-        return (p1.y < p2.y || (p1.y == p2.y && p1.x < p2.x));
-      });
+  std::vector<std::thread> threads2;
+  int chunk_components = (components.size() + num_threads - 1) / num_threads;
+  for (size_t t = 0; t < num_threads; t++) {
+    size_t c1 = t * chunk_components;
+    size_t c2 = std::min(c1 + chunk_components, components.size());
+    threads2.emplace_back([=, &components]() {
+      for (size_t c = c1; c < c2; c++) {
+        std::ranges::sort(components[c], [](const Pixel& p1, const Pixel& p2) {
+          return (p1.y < p2.y || (p1.y == p2.y && p1.x < p2.x));
+        });
+      }
     });
-  });
+  }
+  for (auto& th : threads2) {
+    th.join();
+  }
 
   return components;
 }
@@ -319,19 +313,29 @@ std::vector<Pixel> voroshilov_v_convex_hull_components_stl::QuickHull(Component&
   return res_hull;
 }
 
-std::vector<Hull> voroshilov_v_convex_hull_components_stl::QuickHullAllTBB(std::vector<Component>& components) {
+std::vector<Hull> voroshilov_v_convex_hull_components_stl::QuickHullAllSTL(std::vector<Component>& components) {
   if (components.empty()) {
     return {};
   }
-
-  int components_size = static_cast<int>(components.size());
   std::vector<Hull> hulls(components.size());
 
-  int num_threads = ppc::util::GetPPCNumThreads();
-  oneapi::tbb::task_arena arena(num_threads);
+  std::vector<std::thread> threads;
+  size_t num_threads = std::thread::hardware_concurrency();
+  size_t chunk = (components.size() + num_threads - 1) / num_threads;
 
-  arena.execute(
-      [&] { oneapi::tbb::parallel_for(0, components_size, [&](int i) { hulls[i] = QuickHull(components[i]); }); });
+  for (size_t t = 0; t < num_threads; t++) {
+    size_t c1 = t * chunk;
+    size_t c2 = std::min(c1 + chunk, components.size());
+    threads.emplace_back([=, &components, &hulls]() {
+      for (size_t c = c1; c < c2; c++) {
+        hulls[c] = QuickHull(components[c]);
+      }
+    });
+  }
+
+  for (auto& th : threads) {
+    th.join();
+  }
 
   return hulls;
 }
@@ -343,26 +347,33 @@ std::pair<std::vector<int>, std::vector<int>> voroshilov_v_convex_hull_component
 
   std::vector<int> hulls_indexes(height * width, 0);
   std::vector<int> pixels_indexes(height * width, 0);
-
-  int hulls_size = static_cast<int>(hulls.size());
   std::atomic<int> uniq_hull_index(1);
 
-  int num_threads = ppc::util::GetPPCNumThreads();
-  oneapi::tbb::task_arena arena(num_threads);
+  std::vector<std::thread> threads;
+  size_t num_threads = std::thread::hardware_concurrency();
+  size_t chunk = (hulls.size() + num_threads - 1) / num_threads;
 
-  arena.execute([&] {
-    oneapi::tbb::parallel_for(0, hulls_size, [&](int i) {
-      int pixel_index = 1;
-      int pixels_size = static_cast<int>(hulls[i].size());
-      int hull_index = uniq_hull_index.fetch_add(1);
+  for (size_t t = 0; t < num_threads; t++) {
+    size_t h1 = t * chunk;
+    size_t h2 = std::min(h1 + chunk, hulls.size());
+    threads.emplace_back([=, &hulls, &hulls_indexes, &pixels_indexes, &uniq_hull_index]() {
+      for (size_t h = h1; h < h2; h++) {
+        int pixel_index = 1;
+        int pixels_size = static_cast<int>(hulls[h].size());
+        int hull_index = uniq_hull_index.fetch_add(1);
 
-      for (int j = 0; j < pixels_size; j++) {
-        hulls_indexes[(hulls[i][j].y * width) + hulls[i][j].x] = hull_index;
-        pixels_indexes[(hulls[i][j].y * width) + hulls[i][j].x] = pixel_index;
-        pixel_index++;
+        for (int j = 0; j < pixels_size; j++) {
+          hulls_indexes[(hulls[h][j].y * width) + hulls[h][j].x] = hull_index;
+          pixels_indexes[(hulls[h][j].y * width) + hulls[h][j].x] = pixel_index;
+          pixel_index++;
+        }
       }
     });
-  });
+  }
+
+  for (auto& th : threads) {
+    th.join();
+  }
 
   std::pair<std::vector<int>, std::vector<int>> packed_vectors(hulls_indexes, pixels_indexes);
   return packed_vectors;
