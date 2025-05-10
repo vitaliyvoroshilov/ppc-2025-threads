@@ -10,6 +10,8 @@
 #include <utility>
 #include <vector>
 
+#include "core/util/include/util.hpp"
+
 using namespace voroshilov_v_convex_hull_components_stl;
 
 Pixel::Pixel(int y_param, int x_param) : y(y_param), x(x_param), value(0) {}
@@ -23,14 +25,14 @@ Image::Image(int hght, int wdth, std::vector<int> pxls) {
   width = wdth;
   pixels.resize(height * width);
 
-  size_t num_threads = std::thread::hardware_concurrency();
+  int num_threads = ppc::util::GetPPCNumThreads();
   int chunk = (height + num_threads - 1) / num_threads;
   std::vector<std::thread> threads;
 
-  for (size_t t = 0; t < num_threads; t++) {
+  for (int t = 0; t < num_threads; t++) {
     int y1 = t * chunk;
     int y2 = std::min(y1 + chunk, height);
-    threads.emplace_back([=, &pxls]() {
+    threads.emplace_back([this, y1, y2, &pxls]() {
       for (int y = y1; y < y2; y++) {
         for (int x = 0; x < width; x++) {
           pixels[(y * width) + x] = Pixel(y, x, pxls[(y * width) + x]);
@@ -185,7 +187,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_stl::FindComponentsST
   int height = tmp_image.height;
 
   std::vector<std::thread> threads;
-  int num_threads = std::thread::hardware_concurrency();
+  int num_threads = ppc::util::GetPPCNumThreads();
   std::vector<std::vector<Component>> local_components(num_threads);
   int chunk_height = (height + num_threads - 1) / num_threads;
   std::vector<int> y2(num_threads);
@@ -195,7 +197,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_stl::FindComponentsST
     index_offset[i] = (i * 100000) + 2;
   }
 
-  for (size_t t = 0; t < num_threads; t++) {
+  for (int t = 0; t < num_threads; t++) {
     int y1 = t * chunk_height;
     threads.emplace_back([&, t, y1]() {
       y2[t] = std::min(y1 + chunk_height, height);
@@ -215,13 +217,14 @@ std::vector<Component> voroshilov_v_convex_hull_components_stl::FindComponentsST
 
   MergeComponentsAcrossAreas(components, tmp_image, chunk_height, y2);
 
+  int components_size = static_cast<int>(components.size());
   std::vector<std::thread> threads2;
-  int chunk_components = (components.size() + num_threads - 1) / num_threads;
-  for (size_t t = 0; t < num_threads; t++) {
-    size_t c1 = t * chunk_components;
-    size_t c2 = std::min(c1 + chunk_components, components.size());
+  int chunk_components = (components_size + num_threads - 1) / num_threads;
+  for (int t = 0; t < num_threads; t++) {
+    int c1 = t * chunk_components;
+    int c2 = std::min(c1 + chunk_components, components_size);
     threads2.emplace_back([=, &components]() {
-      for (size_t c = c1; c < c2; c++) {
+      for (int c = c1; c < c2; c++) {
         std::ranges::sort(components[c], [](const Pixel& p1, const Pixel& p2) {
           return (p1.y < p2.y || (p1.y == p2.y && p1.x < p2.x));
         });
@@ -320,7 +323,7 @@ std::vector<Hull> voroshilov_v_convex_hull_components_stl::QuickHullAllSTL(std::
   std::vector<Hull> hulls(components.size());
 
   std::vector<std::thread> threads;
-  size_t num_threads = std::thread::hardware_concurrency();
+  size_t num_threads = static_cast<size_t>(ppc::util::GetPPCNumThreads());
   size_t chunk = (components.size() + num_threads - 1) / num_threads;
 
   for (size_t t = 0; t < num_threads; t++) {
@@ -350,7 +353,7 @@ std::pair<std::vector<int>, std::vector<int>> voroshilov_v_convex_hull_component
   std::atomic<int> uniq_hull_index(1);
 
   std::vector<std::thread> threads;
-  size_t num_threads = std::thread::hardware_concurrency();
+  size_t num_threads = static_cast<size_t>(ppc::util::GetPPCNumThreads());
   size_t chunk = (hulls.size() + num_threads - 1) / num_threads;
 
   for (size_t t = 0; t < num_threads; t++) {
