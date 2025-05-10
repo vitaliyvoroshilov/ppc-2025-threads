@@ -1,5 +1,4 @@
 #include "../include/chc.hpp"
-#include "core/util/include/util.hpp"
 
 #include <algorithm>
 #include <atomic>
@@ -10,6 +9,8 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+#include "core/util/include/util.hpp"
 
 using namespace voroshilov_v_convex_hull_components_stl;
 
