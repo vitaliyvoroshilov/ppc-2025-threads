@@ -323,7 +323,7 @@ std::vector<Hull> voroshilov_v_convex_hull_components_stl::QuickHullAllSTL(std::
   std::vector<Hull> hulls(components.size());
 
   std::vector<std::thread> threads;
-  size_t num_threads = static_cast<size_t>(ppc::util::GetPPCNumThreads());
+  size_t num_threads = ppc::util::GetPPCNumThreads();
   size_t chunk = (components.size() + num_threads - 1) / num_threads;
 
   for (size_t t = 0; t < num_threads; t++) {
@@ -353,7 +353,7 @@ std::pair<std::vector<int>, std::vector<int>> voroshilov_v_convex_hull_component
   std::atomic<int> uniq_hull_index(1);
 
   std::vector<std::thread> threads;
-  size_t num_threads = static_cast<size_t>(ppc::util::GetPPCNumThreads());
+  size_t num_threads = ppc::util::GetPPCNumThreads();
   size_t chunk = (hulls.size() + num_threads - 1) / num_threads;
 
   for (size_t t = 0; t < num_threads; t++) {
