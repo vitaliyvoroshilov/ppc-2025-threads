@@ -1,11 +1,10 @@
 #pragma once
 
+#include <boost/mpi/communicator.hpp>
 #include <cstddef>
 #include <unordered_map>
 #include <utility>
 #include <vector>
-
-#include <boost/mpi/communicator.hpp>
 
 namespace voroshilov_v_convex_hull_components_all {
 
