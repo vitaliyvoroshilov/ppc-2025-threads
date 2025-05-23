@@ -1,6 +1,8 @@
 #pragma once
 
+#include <boost/mpi/collectives.hpp>
 #include <boost/mpi/communicator.hpp>
+#include <boost/serialization/serialization.hpp>
 #include <cstddef>
 #include <unordered_map>
 #include <utility>
@@ -21,6 +23,13 @@ struct Pixel {
   Pixel& operator=(const Pixel& other) = default;
   bool operator==(int value_param) const;
   bool operator==(const Pixel& other) const;
+
+  template <class Archive>
+  void serialize(Archive& ar, unsigned int) {
+    ar & y;
+    ar & x;
+    ar & value;
+  }
 };
 
 struct Image {
@@ -73,7 +82,7 @@ Pixel FindFarthestPixel(std::vector<Pixel>& pixels, LineSegment& line_segment);
 
 std::vector<Pixel> QuickHull(Component& component);
 
-std::vector<Hull> QuickHullAllOMP(std::vector<Component>& components);
+std::vector<Hull> QuickHullAllMPIOMP(std::vector<Component>& components);
 
 std::pair<std::vector<int>, std::vector<int>> PackHulls(std::vector<Hull>& hulls, Image& image);
 

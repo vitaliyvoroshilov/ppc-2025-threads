@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <boost/mpi/communicator.hpp>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -167,10 +168,13 @@ TEST(voroshilov_v_convex_hull_components_all, chc_pipeline_run) {
 
   auto perf_analyzer = std::make_shared<ppc::core::Perf>(chc_task_all);
   perf_analyzer->PipelineRun(perf_attr, perf_results);
-  ppc::core::Perf::PrintPerfStatistic(perf_results);
+
+  boost::mpi::communicator worldd;
+  if (worldd.rank() == 0) {
+    ppc::core::Perf::PrintPerfStatistic(perf_results);
+  }
 
   int hulls_size = static_cast<int>(task_data_all->outputs_count[0]);
-
   std::vector<Hull> hulls = UnpackHulls(hulls_indexes_out, pixels_indexes_out, height, width, hulls_size);
 
 #ifndef _WIN32
@@ -186,12 +190,14 @@ TEST(voroshilov_v_convex_hull_components_all, chc_pipeline_run) {
     SortPixels(hull_cv);
   }
 
-  ASSERT_EQ(hulls.size(), hulls_cv.size());
+  boost::mpi::communicator world;
+  if (world.rank() == 0) {
+    ASSERT_EQ(hulls.size(), hulls_cv.size());
 
-  for (size_t i = 0; i < hulls.size(); i++) {
-    EXPECT_TRUE(IsHullSubset(hulls[i], hulls_cv[i]));
+    for (size_t i = 0; i < hulls.size(); i++) {
+      EXPECT_TRUE(IsHullSubset(hulls[i], hulls_cv[i]));
+    }
   }
-
 #endif
 }
 
@@ -229,7 +235,11 @@ TEST(voroshilov_v_convex_hull_components_all, chc_task_run) {
 
   auto perf_analyzer = std::make_shared<ppc::core::Perf>(chc_task_all);
   perf_analyzer->TaskRun(perf_attr, perf_results);
-  ppc::core::Perf::PrintPerfStatistic(perf_results);
+
+  boost::mpi::communicator worldd;
+  if (worldd.rank() == 0) {
+    ppc::core::Perf::PrintPerfStatistic(perf_results);
+  }
 
   int hulls_size = static_cast<int>(task_data_all->outputs_count[0]);
   std::vector<Hull> hulls = UnpackHulls(hulls_indexes_out, pixels_indexes_out, height, width, hulls_size);
@@ -247,10 +257,13 @@ TEST(voroshilov_v_convex_hull_components_all, chc_task_run) {
     SortPixels(hull_cv);
   }
 
-  ASSERT_EQ(hulls.size(), hulls_cv.size());
+  boost::mpi::communicator world;
+  if (world.rank() == 0) {
+    ASSERT_EQ(hulls.size(), hulls_cv.size());
 
-  for (size_t i = 0; i < hulls.size(); i++) {
-    EXPECT_TRUE(IsHullSubset(hulls[i], hulls_cv[i]));
+    for (size_t i = 0; i < hulls.size(); i++) {
+      EXPECT_TRUE(IsHullSubset(hulls[i], hulls_cv[i]));
+    }
   }
 #endif
 }

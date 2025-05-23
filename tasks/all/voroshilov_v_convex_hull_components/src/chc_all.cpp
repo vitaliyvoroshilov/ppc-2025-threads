@@ -1,6 +1,7 @@
 #include "../include/chc_all.hpp"
 
 #include <algorithm>
+#include <boost/mpi/communicator.hpp>
 #include <utility>
 #include <vector>
 
@@ -37,19 +38,21 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::PreProcessingImpl() {
 bool voroshilov_v_convex_hull_components_all::ChcTaskALL::RunImpl() {
   std::vector<Component> components = FindComponentsOMP(imageIn_);
 
-  hullsOut_ = QuickHullAllOMP(components);
+  hullsOut_ = QuickHullAllMPIOMP(components);
 
   return true;
 }
 
 bool voroshilov_v_convex_hull_components_all::ChcTaskALL::PostProcessingImpl() {
-  std::pair<std::vector<int>, std::vector<int>> packed_out = PackHulls(hullsOut_, imageIn_);
-  std::vector<int> hulls_indexes = packed_out.first;
-  std::vector<int> pixels_indexes = packed_out.second;
+  boost::mpi::communicator world;
+  if (world.rank() == 0) {
+    std::pair<std::vector<int>, std::vector<int>> packed_out = PackHulls(hullsOut_, imageIn_);
+    std::vector<int> hulls_indexes = packed_out.first;
+    std::vector<int> pixels_indexes = packed_out.second;
 
-  std::ranges::copy(hulls_indexes, reinterpret_cast<int *>(task_data->outputs[0]));
-  std::ranges::copy(pixels_indexes, reinterpret_cast<int *>(task_data->outputs[1]));
-  task_data->outputs_count[0] = hullsOut_.size();
-
+    std::ranges::copy(hulls_indexes, reinterpret_cast<int *>(task_data->outputs[0]));
+    std::ranges::copy(pixels_indexes, reinterpret_cast<int *>(task_data->outputs[1]));
+    task_data->outputs_count[0] = hullsOut_.size();
+  }
   return true;
 }

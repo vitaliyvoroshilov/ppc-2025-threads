@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <boost/mpi/communicator.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -176,7 +177,10 @@ TEST(voroshilov_v_convex_hull_components_all, simpleValidationTest) {
   int height = 0;
   int width = 3;
 
-  ASSERT_FALSE(ValidationTest(height, width, pixels));
+  boost::mpi::communicator world;
+  if (world.rank() == 0) {
+    ASSERT_FALSE(ValidationTest(height, width, pixels));
+  }
 }
 
 TEST(voroshilov_v_convex_hull_components_all, simpleTest0Components) {
@@ -190,7 +194,10 @@ TEST(voroshilov_v_convex_hull_components_all, simpleTest0Components) {
   int width = 3;
   std::vector<Hull> result_hulls = SimpleRunTest(height, width, pixels);
 
-  ASSERT_TRUE(result_hulls.empty());
+  boost::mpi::communicator world;
+  if (world.rank() == 0) {
+    ASSERT_TRUE(result_hulls.empty());
+  }
 }
 
 TEST(voroshilov_v_convex_hull_components_all, simpleTest1Component) {
@@ -208,11 +215,14 @@ TEST(voroshilov_v_convex_hull_components_all, simpleTest1Component) {
   Hull hull = {{1, 0}, {0, 1}, {1, 2}, {2, 1}};  // First coordinate is Y, second is X!!!
   expect_hulls.push_back(hull);
 
-  ASSERT_EQ(result_hulls.size(), expect_hulls.size());
+  boost::mpi::communicator world;
+  if (world.rank() == 0) {
+    ASSERT_EQ(result_hulls.size(), expect_hulls.size());
 
-  for (size_t i = 0; i < result_hulls.size(); i++) {
-    for (size_t j = 0; j < result_hulls[i].size(); j++) {
-      EXPECT_EQ(result_hulls[i][j], expect_hulls[i][j]);
+    for (size_t i = 0; i < result_hulls.size(); i++) {
+      for (size_t j = 0; j < result_hulls[i].size(); j++) {
+        EXPECT_EQ(result_hulls[i][j], expect_hulls[i][j]);
+      }
     }
   }
 }
@@ -244,11 +254,14 @@ TEST(voroshilov_v_convex_hull_components_all, simpleTest3Components) {
   SortHulls(result_hulls);
   SortHulls(expect_hulls);
 
-  ASSERT_EQ(result_hulls.size(), expect_hulls.size());
+  boost::mpi::communicator world;
+  if (world.rank() == 0) {
+    ASSERT_EQ(result_hulls.size(), expect_hulls.size());
 
-  for (size_t i = 0; i < result_hulls.size(); i++) {
-    for (size_t j = 0; j < result_hulls[i].size(); j++) {
-      EXPECT_EQ(result_hulls[i][j], expect_hulls[i][j]);
+    for (size_t i = 0; i < result_hulls.size(); i++) {
+      for (size_t j = 0; j < result_hulls[i].size(); j++) {
+        EXPECT_EQ(result_hulls[i][j], expect_hulls[i][j]);
+      }
     }
   }
 }
@@ -292,11 +305,14 @@ TEST(voroshilov_v_convex_hull_components_all, simpleTest5Components) {
   SortHulls(result_hulls);
   SortHulls(expect_hulls);
 
-  ASSERT_EQ(result_hulls.size(), expect_hulls.size());
+  boost::mpi::communicator world;
+  if (world.rank() == 0) {
+    ASSERT_EQ(result_hulls.size(), expect_hulls.size());
 
-  for (size_t i = 0; i < result_hulls.size(); i++) {
-    for (size_t j = 0; j < result_hulls[i].size(); j++) {
-      EXPECT_EQ(result_hulls[i][j], expect_hulls[i][j]);
+    for (size_t i = 0; i < result_hulls.size(); i++) {
+      for (size_t j = 0; j < result_hulls[i].size(); j++) {
+        EXPECT_EQ(result_hulls[i][j], expect_hulls[i][j]);
+      }
     }
   }
 }
@@ -307,70 +323,100 @@ TEST(voroshilov_v_convex_hull_components_all, imageTest0) {
   std::string src_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/0_image.png");
   std::string exp_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/0_expected.png");
 
-  ASSERT_TRUE(ImageRunTest(src_path, exp_path));
+  boost::mpi::communicator world;
+  if (world.rank() == 0) {
+    ASSERT_TRUE(ImageRunTest(src_path, exp_path));
+  }
 }
 
 TEST(voroshilov_v_convex_hull_components_all, imageTest0Incorrect) {
   std::string src_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/0_image.png");
   std::string inc_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/0_incorrect.png");
 
-  ASSERT_FALSE(ImageRunTest(src_path, inc_path));
+  boost::mpi::communicator world;
+  if (world.rank() == 0) {
+    ASSERT_FALSE(ImageRunTest(src_path, inc_path));
+  }
 }
 
 TEST(voroshilov_v_convex_hull_components_all, imageTest1) {
   std::string src_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/1_image.png");
   std::string exp_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/1_expected.png");
 
-  ASSERT_TRUE(ImageRunTest(src_path, exp_path));
+  boost::mpi::communicator world;
+  if (world.rank() == 0) {
+    ASSERT_TRUE(ImageRunTest(src_path, exp_path));
+  }
 }
 
 TEST(voroshilov_v_convex_hull_components_all, imageTest1Incorrect) {
   std::string src_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/1_image.png");
   std::string inc_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/1_incorrect.png");
 
-  ASSERT_FALSE(ImageRunTest(src_path, inc_path));
+  boost::mpi::communicator world;
+  if (world.rank() == 0) {
+    ASSERT_FALSE(ImageRunTest(src_path, inc_path));
+  }
 }
 
 TEST(voroshilov_v_convex_hull_components_all, imageTest2) {
   std::string src_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/2_image.png");
   std::string exp_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/2_expected.png");
 
-  ASSERT_TRUE(ImageRunTest(src_path, exp_path));
+  boost::mpi::communicator world;
+  if (world.rank() == 0) {
+    ASSERT_TRUE(ImageRunTest(src_path, exp_path));
+  }
 }
 
 TEST(voroshilov_v_convex_hull_components_all, imageTest3) {
   std::string src_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/3_image.png");
   std::string exp_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/3_expected.png");
 
-  ASSERT_TRUE(ImageRunTest(src_path, exp_path));
+  boost::mpi::communicator world;
+  if (world.rank() == 0) {
+    ASSERT_TRUE(ImageRunTest(src_path, exp_path));
+  }
 }
 
 TEST(voroshilov_v_convex_hull_components_all, imageTest4) {
   std::string src_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/4_image.png");
   std::string exp_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/4_expected.png");
 
-  ASSERT_TRUE(ImageRunTest(src_path, exp_path));
+  boost::mpi::communicator world;
+  if (world.rank() == 0) {
+    ASSERT_TRUE(ImageRunTest(src_path, exp_path));
+  }
 }
 
 TEST(voroshilov_v_convex_hull_components_all, imageTest5) {
   std::string src_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/5_image.png");
   std::string exp_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/5_expected.png");
 
-  ASSERT_TRUE(ImageRunTest(src_path, exp_path));
+  boost::mpi::communicator world;
+  if (world.rank() == 0) {
+    ASSERT_TRUE(ImageRunTest(src_path, exp_path));
+  }
 }
 
 TEST(voroshilov_v_convex_hull_components_all, imageTest6) {
   std::string src_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/6_image.png");
   std::string exp_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/6_expected.png");
 
-  ASSERT_TRUE(ImageRunTest(src_path, exp_path));
+  boost::mpi::communicator world;
+  if (world.rank() == 0) {
+    ASSERT_TRUE(ImageRunTest(src_path, exp_path));
+  }
 }
 
 TEST(voroshilov_v_convex_hull_components_all, imageTest7) {
   std::string src_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/7_image.png");
   std::string exp_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/7_expected.png");
 
-  ASSERT_TRUE(ImageRunTest(src_path, exp_path));
+  boost::mpi::communicator world;
+  if (world.rank() == 0) {
+    ASSERT_TRUE(ImageRunTest(src_path, exp_path));
+  }
 }
 
 #endif

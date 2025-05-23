@@ -4,6 +4,9 @@
 
 #include <algorithm>
 #include <atomic>
+#include <boost/mpi/collectives.hpp>
+#include <boost/mpi/communicator.hpp>
+#include <boost/serialization/vector.hpp>
 #include <cmath>
 #include <cstddef>
 #include <stack>
@@ -309,20 +312,58 @@ std::vector<Pixel> voroshilov_v_convex_hull_components_all::QuickHull(Component&
   return res_hull;
 }
 
-std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllOMP(std::vector<Component>& components) {
+std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(std::vector<Component>& components) {
   if (components.empty()) {
     return {};
   }
 
-  int components_size = static_cast<int>(components.size());
-  std::vector<Hull> hulls(components.size());
+  boost::mpi::communicator world;
 
-#pragma omp parallel for schedule(dynamic)
-  for (int i = 0; i < components_size; i++) {
-    hulls[i] = QuickHull(components[i]);
+  int part;
+  int remainder;
+  part = components.size() / world.size();
+  remainder = components.size() % world.size();
+
+  std::vector<int> parts(world.size(), part);
+  std::vector<int> offsets(world.size());
+
+  for (int i = 0; i < world.size(); i++) {
+    if (remainder > 0) {
+      parts[i]++;
+      remainder--;
+    }
+    if (i == 0) {
+      offsets[i] = 0;
+    } else {
+      offsets[i] = offsets[i - 1] + parts[i - 1];
+    }
   }
 
-  return hulls;
+  std::vector<Component> local_components(parts[world.rank()]);
+  boost::mpi::scatterv(world, components.data(), parts, offsets, local_components.data(), parts[world.rank()], 0);
+
+  int local_components_size = static_cast<int>(local_components.size());
+  std::vector<Hull> local_hulls(local_components.size());
+
+#pragma omp parallel for schedule(dynamic)
+  for (int i = 0; i < local_components_size; i++) {
+    local_hulls[i] = QuickHull(local_components[i]);
+  }
+
+  std::vector<std::vector<Hull>> gathered_hulls;
+  boost::mpi::gather(world, local_hulls, gathered_hulls, 0);
+
+  if (world.rank() == 0) {
+    std::vector<Hull> hulls;
+    for (auto& vector_hulls : gathered_hulls) {
+      hulls.insert(hulls.end(), std::make_move_iterator(vector_hulls.begin()),
+                   std::make_move_iterator(vector_hulls.end()));
+    }
+
+    return hulls;
+  }
+
+  return {};
 }
 
 std::pair<std::vector<int>, std::vector<int>> voroshilov_v_convex_hull_components_all::PackHulls(
