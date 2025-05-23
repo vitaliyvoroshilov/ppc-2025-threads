@@ -1,7 +1,6 @@
 #pragma once
 
 #include <boost/serialization/access.hpp>
-#include <boost/serialization/vector.hpp>
 #include <cstddef>
 #include <unordered_map>
 #include <utility>
@@ -27,11 +26,12 @@ struct Pixel {
   friend class boost::serialization::access;
 
   template <class Archive>
-  void serialize(Archive& ar, unsigned int)  // NOLINT(readability-identifier-naming) {
-      ar& y;
-  ar& x;
-  ar& value;
-}
+  void serialize(Archive& ar, unsigned int)  // NOLINT(readability-identifier-naming)
+  {
+    ar & y;
+    ar & x;
+    ar & value;
+  }
 };
 
 struct Image {

@@ -6,6 +6,7 @@
 #include <atomic>
 #include <boost/mpi/collectives.hpp>
 #include <boost/mpi/communicator.hpp>
+#include <boost/serialization/vector.hpp>  // NOLINT(misc-include-cleaner)
 #include <cmath>
 #include <cstddef>
 #include <iterator>
