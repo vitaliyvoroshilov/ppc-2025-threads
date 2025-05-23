@@ -341,8 +341,8 @@ std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(st
   }
 
   std::vector<Component> local_components(parts[world.rank()]);
-  boost::mpi::scatterv(world, components.data(), parts, offsets, local_components.data(), parts[world.rank()],
-                       0);  // NOLINT(misc-include-cleaner)
+  // NOLINTNEXTLINE(misc-include-cleaner)
+  boost::mpi::scatterv(world, components.data(), parts, offsets, local_components.data(), parts[world.rank()], 0);
 
   int local_components_size = static_cast<int>(local_components.size());
   std::vector<Hull> local_hulls(local_components.size());
@@ -353,7 +353,8 @@ std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(st
   }
 
   std::vector<std::vector<Hull>> gathered_hulls;
-  boost::mpi::gather(world, local_hulls, gathered_hulls, 0);  // NOLINT(misc-include-cleaner)
+  // NOLINTNEXTLINE(misc-include-cleaner)
+  boost::mpi::gather(world, local_hulls, gathered_hulls, 0);
 
   if (world.rank() == 0) {
     std::vector<Hull> hulls;
