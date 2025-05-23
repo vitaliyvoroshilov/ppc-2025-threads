@@ -1,8 +1,7 @@
 #pragma once
 
-#include <boost/mpi/collectives.hpp>
-#include <boost/mpi/communicator.hpp>
-#include <boost/serialization/serialization.hpp>
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/vector.hpp>
 #include <cstddef>
 #include <unordered_map>
 #include <utility>
@@ -24,12 +23,15 @@ struct Pixel {
   bool operator==(int value_param) const;
   bool operator==(const Pixel& other) const;
 
+ private:
+  friend class boost::serialization::access;
+
   template <class Archive>
-  void serialize(Archive& ar, unsigned int) {
-    ar & y;
-    ar & x;
-    ar & value;
-  }
+  void serialize(Archive& ar, unsigned int)  // NOLINT(readability-identifier-naming) {
+      ar& y;
+  ar& x;
+  ar& value;
+}
 };
 
 struct Image {

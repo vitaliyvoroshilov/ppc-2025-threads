@@ -6,9 +6,9 @@
 #include <atomic>
 #include <boost/mpi/collectives.hpp>
 #include <boost/mpi/communicator.hpp>
-#include <boost/serialization/vector.hpp>
 #include <cmath>
 #include <cstddef>
+#include <iterator>
 #include <stack>
 #include <unordered_map>
 #include <utility>
@@ -319,10 +319,10 @@ std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(st
 
   boost::mpi::communicator world;
 
-  int part;
-  int remainder;
-  part = components.size() / world.size();
-  remainder = components.size() % world.size();
+  int part = 0;
+  int remainder = 0;
+  part = static_cast<int>(components.size()) / world.size();
+  remainder = static_cast<int>(components.size()) % world.size();
 
   std::vector<int> parts(world.size(), part);
   std::vector<int> offsets(world.size());
