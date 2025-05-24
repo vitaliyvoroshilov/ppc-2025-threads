@@ -34,6 +34,13 @@ struct Pixel {
   }
 };
 
+using Component = std::vector<Pixel>;
+
+using Hull = std::vector<Pixel>;
+
+std::vector<int> PackPixels(std::vector<Pixel> pixels, int width);
+std::vector<Pixel> UnpackPixels(std::vector<int> packed, int width);
+
 struct Image {
   int height;
   int width;
@@ -52,10 +59,6 @@ struct LineSegment {
 
   LineSegment(Pixel& a_param, Pixel& b_param);
 };
-
-using Component = std::vector<Pixel>;
-
-using Hull = std::vector<Pixel>;
 
 class UnionFind {
  public:
@@ -84,7 +87,7 @@ Pixel FindFarthestPixel(std::vector<Pixel>& pixels, LineSegment& line_segment);
 
 std::vector<Pixel> QuickHull(Component& component);
 
-std::vector<Hull> QuickHullAllMPIOMP(Image& image, std::vector<Component>& components);
+std::vector<Hull> QuickHullAllMPIOMP(std::vector<Component>& components, int image_width);
 
 std::pair<std::vector<int>, std::vector<int>> PackHulls(std::vector<Hull>& hulls, Image& image);
 

@@ -31,6 +31,24 @@ using namespace voroshilov_v_convex_hull_components_all;
 Pixel::Pixel(int y_param, int x_param) : y(y_param), x(x_param), value(0) {}
 Pixel::Pixel(int y_param, int x_param, int value_param) : y(y_param), x(x_param), value(value_param) {}
 
+std::vector<int> voroshilov_v_convex_hull_components_all::PackPixels(std::vector<Pixel> pixels, int width) {
+  std::vector<int> packed;
+  for (Pixel& pixel : pixels) {
+    int idx = pixel.y * width + pixel.x;
+    packed.push_back(idx);
+  }
+  return packed;
+}
+std::vector<Pixel> voroshilov_v_convex_hull_components_all::UnpackPixels(std::vector<int> packed, int width) {
+  std::vector<Pixel> pixels;
+  for (int idx : packed) {
+    int y = idx / width;
+    int x = idx % width;
+    pixels.push_back(Pixel(y, x, 1));
+  }
+  return pixels;
+}
+
 bool Pixel::operator==(const int value_param) const { return value == value_param; }
 bool Pixel::operator==(const Pixel& other) const { return (y == other.y) && (x == other.x); }
 
@@ -324,60 +342,97 @@ std::vector<Pixel> voroshilov_v_convex_hull_components_all::QuickHull(Component&
   return res_hull;
 }
 
-std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(Image& image, std::vector<Component>& components) {
+std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(std::vector<Component>& components, int image_width) {
   boost::mpi::communicator world;
-  
-  std::vector<std::vector<Pixel>> split_seeds;
 
+  std::vector<int> comp_sizes;
+  for (Component& comp : components) {
+    comp_sizes.push_back(static_cast<int>(comp.size()));
+  }
+  
+  //std::vector<std::vector<Component>> split_components(world.size());
+
+int part = static_cast<int>(components.size()) / world.size();
+int remainder = static_cast<int>(components.size()) % world.size();
+  std::vector<int> comp_parts(world.size(), part);
+  std::vector<int> comp_offsets(world.size());
+  std::vector<int> idx_parts(world.size());
+  std::vector<int> idx_offsets(world.size());
+  std::vector<int> global_idxs;
+  
   if (world.rank() == 0) {
     auto start1 = std::chrono::high_resolution_clock::now();
-    int part = static_cast<int>(components.size()) / world.size();
-    int remainder = static_cast<int>(components.size()) % world.size();
 
-    std::vector<int> parts(world.size(), part);
-    std::vector<int> offsets(world.size());
-  
     for (int i = 0; i < world.size(); i++) {
       if (remainder > 0) {
-        parts[i]++;
+        comp_parts[i]++;
         remainder--;
       }
       if (i == 0) {
-        offsets[i] = 0;
+        comp_offsets[i] = 0;
       } else {
-        offsets[i] = offsets[i - 1] + parts[i - 1];
+        comp_offsets[i] = comp_offsets[i - 1] + comp_parts[i - 1];
       }
     }
 
-    for (int proc_i = 0; proc_i < world.size(); proc_i++) {
-      std::vector<Pixel> tmp_seeds(parts[proc_i]);
-      for (int seed_i = 0; seed_i < parts[proc_i]; seed_i++) {
-        tmp_seeds[seed_i] = components[offsets[proc_i] + seed_i][0];
+    for (int i = 0; i < world.size(); i++) {
+      int sum = 0;
+      for (int j = 0; j < comp_parts[i]; j++) {
+        sum += comp_sizes[comp_offsets[i] + j];
       }
-      split_seeds.push_back(tmp_seeds);
+      idx_parts[i] = sum;
+      if (i == 0) {
+        idx_offsets[i] = 0;
+      } else {
+        idx_offsets[i] = idx_offsets[i - 1] + idx_parts[i - 1];
+      }
     }
-    
+
+    global_idxs.reserve(std::accumulate(idx_parts.begin(), idx_parts.end(), 0));
+
+    for (int i = 0; i < world.size(); i++) {
+      for (int j = 0; j < comp_parts[i]; j++) {
+        Component comp = components[comp_offsets[i] + j];
+        for (Pixel& p : comp) {
+          global_idxs.push_back(p.y * image_width + p.x);
+        }
+      }
+    }
+
+/*
+    for (int proc_i = 0; proc_i < world.size(); proc_i++) {
+      std::vector<Component> tmp_vec(parts[proc_i]);
+      std::ranges::copy(components.begin() + offsets[proc_i], components.begin() + offsets[proc_i] + parts[proc_i], std::back_inserter(split_components[proc_i]));
+    }
+*/  
     auto end1 = std::chrono::high_resolution_clock::now();
     auto duration1 = std::chrono::duration_cast<std::chrono::milliseconds>(end1 - start1).count();
     std::cout << "\n Proc" << world.rank() << ", partition: " << duration1 << " ms \n";
   }
 
   auto start = std::chrono::high_resolution_clock::now();
-  std::vector<Pixel> local_seeds;
+  boost::mpi::broadcast(world, idx_parts, 0);
+  std::vector<int> local_idxs(idx_parts[world.rank()]);
   // NOLINTNEXTLINE(misc-include-cleaner)
-  boost::mpi::scatter(world, split_seeds, local_seeds, 0);
+  boost::mpi::scatterv(world, global_idxs.data(), idx_parts, idx_offsets, local_idxs.data(), idx_parts[world.rank()], 0);
   auto end = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
   std::cout << "\n Proc" << world.rank() << ", scatter: " << duration << " ms \n";
 
-  start = std::chrono::high_resolution_clock::now();
-  std::vector<Component> local_components;
-  for (Pixel& seed : local_seeds) {
-    local_components.push_back(DepthComponentSearchInArea(seed, &image, 0, 0, image.height));
+  std::vector<Component> local_components(comp_parts[world.rank()]);
+  int pos = 0;
+  for (int i = 0; i < comp_parts[world.rank()]; i++) {
+    int comp_size = comp_sizes[comp_offsets[world.rank()] + i];
+    Component comp;
+    comp.reserve(comp_size);
+    for (int j = 0; j < comp_size; j++, pos++) {
+      int idx = local_idxs[pos];
+      int y = idx / image_width;
+      int x = idx % image_width;
+      comp.emplace_back(Pixel{y, x, 1});
+    }
+    local_components[i] = std::move(comp);
   }
-  end = std::chrono::high_resolution_clock::now();
-  duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-  std::cout << "\n Proc" << world.rank() << ", dfs from seeds: " << duration << " ms \n";
 
   int local_components_size = static_cast<int>(local_components.size());
   std::vector<Hull> local_hulls(local_components.size());
