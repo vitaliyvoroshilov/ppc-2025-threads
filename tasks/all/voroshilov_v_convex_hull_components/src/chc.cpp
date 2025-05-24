@@ -373,7 +373,7 @@ std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(Im
   start = std::chrono::high_resolution_clock::now();
   std::vector<Component> local_components;
   for (Pixel& seed : local_seeds) {
-    local_components.push_back(DepthComponentSearchInArea(seed, &image, 0, 0, 0));
+    local_components.push_back(DepthComponentSearchInArea(seed, &image, 0, 0, image.height));
   }
   end = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
