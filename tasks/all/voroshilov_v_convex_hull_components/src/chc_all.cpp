@@ -41,7 +41,7 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::ValidationImpl() {
 
 bool voroshilov_v_convex_hull_components_all::ChcTaskALL::PreProcessingImpl() {
   auto start1 = std::chrono::high_resolution_clock::now();
-  if (world_.rank() == 0) {
+  //if (world_.rank() == 0) {
     int *ptr = reinterpret_cast<int *>(task_data->inputs[0]);
     int height = *ptr;
 
@@ -54,7 +54,7 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::PreProcessingImpl() {
 
     Image image(height, width, pixels);
     imageIn_ = image;
-  }
+  //}
   auto end1 = std::chrono::high_resolution_clock::now();
   auto duration1 = std::chrono::duration_cast<std::chrono::milliseconds>(end1 - start1).count();
   std::cout << "\n Proc" << world_.rank() << ", ALL PreProcessing: " << duration1 << " ms \n";
@@ -68,7 +68,7 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::RunImpl() {
   }
 
   auto start1 = std::chrono::high_resolution_clock::now();
-  hullsOut_ = QuickHullAllMPIOMP(components);
+  hullsOut_ = QuickHullAllMPIOMP(imageIn_, components);
   auto end1 = std::chrono::high_resolution_clock::now();
   auto duration1 = std::chrono::duration_cast<std::chrono::milliseconds>(end1 - start1).count();
   std::cout << "\n Proc" << world_.rank() << ", ALL QuickHullAll: " << duration1 << " ms \n";

@@ -324,10 +324,10 @@ std::vector<Pixel> voroshilov_v_convex_hull_components_all::QuickHull(Component&
   return res_hull;
 }
 
-std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(std::vector<Component>& components) {
+std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(Image& image, std::vector<Component>& components) {
   boost::mpi::communicator world;
   
-  std::vector<std::vector<Component>> split_components(world.size());
+  std::vector<std::vector<Pixel>> split_seeds;
 
   if (world.rank() == 0) {
     auto start1 = std::chrono::high_resolution_clock::now();
@@ -350,22 +350,34 @@ std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(st
     }
 
     for (int proc_i = 0; proc_i < world.size(); proc_i++) {
-      std::vector<Component> tmp_vec(parts[proc_i]);
-      std::ranges::copy(components.begin() + offsets[proc_i], components.begin() + offsets[proc_i] + parts[proc_i], std::back_inserter(split_components[proc_i]));
+      std::vector<Pixel> tmp_seeds(parts[proc_i]);
+      for (int seed_i = 0; seed_i < parts[proc_i]; seed_i++) {
+        tmp_seeds[seed_i] = components[offsets[proc_i] + seed_i][0];
+      }
+      split_seeds.push_back(tmp_seeds);
     }
     
-      auto end1 = std::chrono::high_resolution_clock::now();
-      auto duration1 = std::chrono::duration_cast<std::chrono::milliseconds>(end1 - start1).count();
-      std::cout << "\n Proc" << world.rank() << ", partition: " << duration1 << " ms \n";
+    auto end1 = std::chrono::high_resolution_clock::now();
+    auto duration1 = std::chrono::duration_cast<std::chrono::milliseconds>(end1 - start1).count();
+    std::cout << "\n Proc" << world.rank() << ", partition: " << duration1 << " ms \n";
   }
 
   auto start = std::chrono::high_resolution_clock::now();
-  std::vector<Component> local_components;
+  std::vector<Pixel> local_seeds;
   // NOLINTNEXTLINE(misc-include-cleaner)
-  boost::mpi::scatter(world, split_components, local_components, 0);
+  boost::mpi::scatter(world, split_seeds, local_seeds, 0);
   auto end = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
   std::cout << "\n Proc" << world.rank() << ", scatter: " << duration << " ms \n";
+
+  start = std::chrono::high_resolution_clock::now();
+  std::vector<Component> local_components;
+  for (Pixel& seed : local_seeds) {
+    local_components.push_back(DepthComponentSearchInArea(seed, &image, 0, 0, 0));
+  }
+  end = std::chrono::high_resolution_clock::now();
+  duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+  std::cout << "\n Proc" << world.rank() << ", dfs from seeds: " << duration << " ms \n";
 
   int local_components_size = static_cast<int>(local_components.size());
   std::vector<Hull> local_hulls(local_components.size());

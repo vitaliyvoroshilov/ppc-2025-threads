@@ -145,12 +145,13 @@ TEST(voroshilov_v_convex_hull_components_all, chc_pipeline_run) {
   std::vector<int> pixels_indexes_out(height * width);
 
   auto task_data_all = std::make_shared<ppc::core::TaskData>();
+  task_data_all->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
+  task_data_all->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_width));
+  task_data_all->inputs.emplace_back(reinterpret_cast<uint8_t*>(pixels.data()));
+  task_data_all->inputs_count.emplace_back(pixels.size());
+  
   boost::mpi::communicator world;
   if (world.rank() == 0) {
-    task_data_all->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
-    task_data_all->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_width));
-    task_data_all->inputs.emplace_back(reinterpret_cast<uint8_t*>(pixels.data()));
-    task_data_all->inputs_count.emplace_back(pixels.size());
     task_data_all->outputs.emplace_back(reinterpret_cast<uint8_t*>(hulls_indexes_out.data()));
     task_data_all->outputs.emplace_back(reinterpret_cast<uint8_t*>(pixels_indexes_out.data()));
     task_data_all->outputs_count.emplace_back(0);

@@ -84,7 +84,7 @@ Pixel FindFarthestPixel(std::vector<Pixel>& pixels, LineSegment& line_segment);
 
 std::vector<Pixel> QuickHull(Component& component);
 
-std::vector<Hull> QuickHullAllMPIOMP(std::vector<Component>& components);
+std::vector<Hull> QuickHullAllMPIOMP(Image& image, std::vector<Component>& components);
 
 std::pair<std::vector<int>, std::vector<int>> PackHulls(std::vector<Hull>& hulls, Image& image);
 
