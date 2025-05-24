@@ -314,16 +314,18 @@ std::vector<Pixel> voroshilov_v_convex_hull_components_all::QuickHull(Component&
 }
 
 std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(std::vector<Component>& components) {
-  if (components.empty()) {
-    return {};
-  }
-
   boost::mpi::communicator world;
 
   int part = 0;
   int remainder = 0;
-  part = static_cast<int>(components.size()) / world.size();
-  remainder = static_cast<int>(components.size()) % world.size();
+  if (world.rank() == 0) {
+    part = static_cast<int>(components.size()) / world.size();
+    remainder = static_cast<int>(components.size()) % world.size();
+  }
+  // NOLINTNEXTLINE(misc-include-cleaner)
+  boost::mpi::broadcast(world, part, 0);
+  // NOLINTNEXTLINE(misc-include-cleaner)
+  boost::mpi::broadcast(world, remainder, 0);
 
   std::vector<int> parts(world.size(), part);
   std::vector<int> offsets(world.size());
