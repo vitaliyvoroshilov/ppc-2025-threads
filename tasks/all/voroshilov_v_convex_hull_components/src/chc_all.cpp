@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "../include/chc.hpp"
+#include "core/util/include/util.hpp"
 
 using namespace voroshilov_v_convex_hull_components_all;
 
