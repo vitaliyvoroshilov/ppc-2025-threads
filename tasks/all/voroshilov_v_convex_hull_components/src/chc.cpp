@@ -15,39 +15,10 @@
 #include <utility>
 #include <vector>
 
-
-
-
-
-#include <chrono>
-#include <iostream>
-
-
-
-
-
 using namespace voroshilov_v_convex_hull_components_all;
 
 Pixel::Pixel(int y_param, int x_param) : y(y_param), x(x_param), value(0) {}
 Pixel::Pixel(int y_param, int x_param, int value_param) : y(y_param), x(x_param), value(value_param) {}
-
-std::vector<int> voroshilov_v_convex_hull_components_all::PackPixels(std::vector<Pixel> pixels, int width) {
-  std::vector<int> packed;
-  for (Pixel& pixel : pixels) {
-    int idx = pixel.y * width + pixel.x;
-    packed.push_back(idx);
-  }
-  return packed;
-}
-std::vector<Pixel> voroshilov_v_convex_hull_components_all::UnpackPixels(std::vector<int> packed, int width) {
-  std::vector<Pixel> pixels;
-  for (int idx : packed) {
-    int y = idx / width;
-    int x = idx % width;
-    pixels.push_back(Pixel(y, x, 1));
-  }
-  return pixels;
-}
 
 bool Pixel::operator==(const int value_param) const { return value == value_param; }
 bool Pixel::operator==(const Pixel& other) const { return (y == other.y) && (x == other.x); }
@@ -342,87 +313,68 @@ std::vector<Pixel> voroshilov_v_convex_hull_components_all::QuickHull(Component&
   return res_hull;
 }
 
-std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(std::vector<Component>& components, int image_width) {
+std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(std::vector<Component>& components,
+                                                                              int image_width) {
   boost::mpi::communicator world;
+  boost::mpi::broadcast(world, image_width, 0);
 
   std::vector<int> comp_sizes;
-  for (Component& comp : components) {
-    comp_sizes.push_back(static_cast<int>(comp.size()));
-  }
-  
-  //std::vector<std::vector<Component>> split_components(world.size());
-
-int part = static_cast<int>(components.size()) / world.size();
-int remainder = static_cast<int>(components.size()) % world.size();
-  std::vector<int> comp_parts(world.size(), part);
-  std::vector<int> comp_offsets(world.size());
-  std::vector<int> idx_parts(world.size());
-  std::vector<int> idx_offsets(world.size());
-  std::vector<int> global_idxs;
-  
   if (world.rank() == 0) {
-    auto start1 = std::chrono::high_resolution_clock::now();
+    comp_sizes.reserve(components.size());
+    for (Component& comp : components) {
+      comp_sizes.push_back(static_cast<int>(comp.size()));
+    }
+  }
+  boost::mpi::broadcast(world, comp_sizes, 0);
 
+  std::vector<int> parts(world.size());
+  std::vector<int> offsets(world.size());
+  if (world.rank() == 0) {
+    int base = static_cast<int>(components.size()) / world.size();
+    int remainder = static_cast<int>(components.size()) % world.size();
     for (int i = 0; i < world.size(); i++) {
+      parts[i] = base;
       if (remainder > 0) {
-        comp_parts[i]++;
+        parts[i]++;
         remainder--;
       }
       if (i == 0) {
-        comp_offsets[i] = 0;
+        offsets[i] = 0;
       } else {
-        comp_offsets[i] = comp_offsets[i - 1] + comp_parts[i - 1];
+        offsets[i] = offsets[i - 1] + parts[i - 1];
       }
     }
+  }
+  boost::mpi::broadcast(world, parts, 0);
+  boost::mpi::broadcast(world, offsets, 0);
 
+  std::vector<std::vector<int>> split_idxs(world.size());
+  if (world.rank() == 0) {
     for (int i = 0; i < world.size(); i++) {
-      int sum = 0;
-      for (int j = 0; j < comp_parts[i]; j++) {
-        sum += comp_sizes[comp_offsets[i] + j];
+      int part = parts[i];
+      int offset = offsets[i];
+      int total_pixels = 0;
+      for (int j = 0; j < part; j++) {
+        total_pixels += comp_sizes[offset + j];
       }
-      idx_parts[i] = sum;
-      if (i == 0) {
-        idx_offsets[i] = 0;
-      } else {
-        idx_offsets[i] = idx_offsets[i - 1] + idx_parts[i - 1];
-      }
-    }
-
-    global_idxs.reserve(std::accumulate(idx_parts.begin(), idx_parts.end(), 0));
-
-    for (int i = 0; i < world.size(); i++) {
-      for (int j = 0; j < comp_parts[i]; j++) {
-        Component comp = components[comp_offsets[i] + j];
+      split_idxs[i].reserve(total_pixels);
+      for (int j = 0; j < part; j++) {
+        Component comp = components[offset + j];
         for (Pixel& p : comp) {
-          global_idxs.push_back(p.y * image_width + p.x);
+          split_idxs[i].push_back(p.y * image_width + p.x);
         }
       }
     }
-
-/*
-    for (int proc_i = 0; proc_i < world.size(); proc_i++) {
-      std::vector<Component> tmp_vec(parts[proc_i]);
-      std::ranges::copy(components.begin() + offsets[proc_i], components.begin() + offsets[proc_i] + parts[proc_i], std::back_inserter(split_components[proc_i]));
-    }
-*/  
-    auto end1 = std::chrono::high_resolution_clock::now();
-    auto duration1 = std::chrono::duration_cast<std::chrono::milliseconds>(end1 - start1).count();
-    std::cout << "\n Proc" << world.rank() << ", partition: " << duration1 << " ms \n";
   }
 
-  auto start = std::chrono::high_resolution_clock::now();
-  boost::mpi::broadcast(world, idx_parts, 0);
-  std::vector<int> local_idxs(idx_parts[world.rank()]);
+  std::vector<int> local_idxs;
   // NOLINTNEXTLINE(misc-include-cleaner)
-  boost::mpi::scatterv(world, global_idxs.data(), idx_parts, idx_offsets, local_idxs.data(), idx_parts[world.rank()], 0);
-  auto end = std::chrono::high_resolution_clock::now();
-  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-  std::cout << "\n Proc" << world.rank() << ", scatter: " << duration << " ms \n";
+  boost::mpi::scatter(world, split_idxs, local_idxs, 0);
 
-  std::vector<Component> local_components(comp_parts[world.rank()]);
+  std::vector<Component> local_components(parts[world.rank()]);
   int pos = 0;
-  for (int i = 0; i < comp_parts[world.rank()]; i++) {
-    int comp_size = comp_sizes[comp_offsets[world.rank()] + i];
+  for (int i = 0; i < parts[world.rank()]; i++) {
+    int comp_size = comp_sizes[offsets[world.rank()] + i];
     Component comp;
     comp.reserve(comp_size);
     for (int j = 0; j < comp_size; j++, pos++) {
@@ -437,34 +389,20 @@ int remainder = static_cast<int>(components.size()) % world.size();
   int local_components_size = static_cast<int>(local_components.size());
   std::vector<Hull> local_hulls(local_components.size());
 
-  start = std::chrono::high_resolution_clock::now();
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < local_components_size; i++) {
     local_hulls[i] = QuickHull(local_components[i]);
   }
-  end = std::chrono::high_resolution_clock::now();
-  duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-  std::cout << "\n Proc" << world.rank() << ", omp for: " << duration << " ms \n";
 
-  start = std::chrono::high_resolution_clock::now();
   std::vector<std::vector<Hull>> gathered_hulls;
   // NOLINTNEXTLINE(misc-include-cleaner)
   boost::mpi::gather(world, local_hulls, gathered_hulls, 0);
-  end = std::chrono::high_resolution_clock::now();
-  duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-  std::cout << "\n Proc" << world.rank() << ", gather: " << duration << " ms \n";
-
-  start = std::chrono::high_resolution_clock::now();
   if (world.rank() == 0) {
     std::vector<Hull> hulls;
     for (auto& vector_hulls : gathered_hulls) {
       hulls.insert(hulls.end(), std::make_move_iterator(vector_hulls.begin()),
                    std::make_move_iterator(vector_hulls.end()));
     }
-
-    end = std::chrono::high_resolution_clock::now();
-    duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-    std::cout << "\n Proc" << world.rank() << ", insertion: " << duration << " ms \n";
 
     return hulls;
   }

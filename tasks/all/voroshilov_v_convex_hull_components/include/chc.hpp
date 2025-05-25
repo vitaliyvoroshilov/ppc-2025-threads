@@ -38,9 +38,6 @@ using Component = std::vector<Pixel>;
 
 using Hull = std::vector<Pixel>;
 
-std::vector<int> PackPixels(std::vector<Pixel> pixels, int width);
-std::vector<Pixel> UnpackPixels(std::vector<int> packed, int width);
-
 struct Image {
   int height;
   int width;

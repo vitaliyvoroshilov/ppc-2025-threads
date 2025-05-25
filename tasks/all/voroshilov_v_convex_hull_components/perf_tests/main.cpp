@@ -145,7 +145,7 @@ TEST(voroshilov_v_convex_hull_components_all, chc_pipeline_run) {
   std::vector<int> pixels_indexes_out(height * width);
 
   auto task_data_all = std::make_shared<ppc::core::TaskData>();
-  
+
   boost::mpi::communicator world;
   if (world.rank() == 0) {
     task_data_all->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
@@ -199,7 +199,7 @@ TEST(voroshilov_v_convex_hull_components_all, chc_pipeline_run) {
 #endif
   }
 }
-/*
+
 TEST(voroshilov_v_convex_hull_components_all, chc_task_run) {
   int height = 10'000;
   int width = 10'000;
@@ -210,15 +210,17 @@ TEST(voroshilov_v_convex_hull_components_all, chc_task_run) {
   std::vector<int> hulls_indexes_out(height * width);
   std::vector<int> pixels_indexes_out(height * width);
 
+  boost::mpi::communicator world;
   auto task_data_all = std::make_shared<ppc::core::TaskData>();
-  task_data_all->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
-  task_data_all->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_width));
-  task_data_all->inputs.emplace_back(reinterpret_cast<uint8_t*>(pixels.data()));
-  task_data_all->inputs_count.emplace_back(pixels.size());
-  task_data_all->outputs.emplace_back(reinterpret_cast<uint8_t*>(hulls_indexes_out.data()));
-  task_data_all->outputs.emplace_back(reinterpret_cast<uint8_t*>(pixels_indexes_out.data()));
-  task_data_all->outputs_count.emplace_back(0);
-
+  if (world.rank() == 0) {
+    task_data_all->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
+    task_data_all->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_width));
+    task_data_all->inputs.emplace_back(reinterpret_cast<uint8_t*>(pixels.data()));
+    task_data_all->inputs_count.emplace_back(pixels.size());
+    task_data_all->outputs.emplace_back(reinterpret_cast<uint8_t*>(hulls_indexes_out.data()));
+    task_data_all->outputs.emplace_back(reinterpret_cast<uint8_t*>(pixels_indexes_out.data()));
+    task_data_all->outputs_count.emplace_back(0);
+  }
   auto chc_task_all = std::make_shared<voroshilov_v_convex_hull_components_all::ChcTaskALL>(task_data_all);
 
   auto perf_attr = std::make_shared<ppc::core::PerfAttr>();
@@ -235,35 +237,33 @@ TEST(voroshilov_v_convex_hull_components_all, chc_task_run) {
   auto perf_analyzer = std::make_shared<ppc::core::Perf>(chc_task_all);
   perf_analyzer->TaskRun(perf_attr, perf_results);
 
-  boost::mpi::communicator worldd;
-  if (worldd.rank() == 0) {
+  if (world.rank() == 0) {
     ppc::core::Perf::PrintPerfStatistic(perf_results);
-  }
 
-  int hulls_size = static_cast<int>(task_data_all->outputs_count[0]);
-  std::vector<Hull> hulls = UnpackHulls(hulls_indexes_out, pixels_indexes_out, height, width, hulls_size);
+    int hulls_size = static_cast<int>(task_data_all->outputs_count[0]);
+    std::vector<Hull> hulls = UnpackHulls(hulls_indexes_out, pixels_indexes_out, height, width, hulls_size);
 
 #ifndef _WIN32
-  std::vector<Hull> hulls_cv = GetHullsWithOpencv(height, width, pixels);
+    std::vector<Hull> hulls_cv = GetHullsWithOpencv(height, width, pixels);
 
-  SortHulls(hulls);
-  for (Hull& hull : hulls) {
-    SortPixels(hull);
-  }
-
-  SortHulls(hulls_cv);
-  for (Hull& hull_cv : hulls_cv) {
-    SortPixels(hull_cv);
-  }
-
-  boost::mpi::communicator world;
-  if (world.rank() == 0) {
-    ASSERT_EQ(hulls.size(), hulls_cv.size());
-
-    for (size_t i = 0; i < hulls.size(); i++) {
-      EXPECT_TRUE(IsHullSubset(hulls[i], hulls_cv[i]));
+    SortHulls(hulls);
+    for (Hull& hull : hulls) {
+      SortPixels(hull);
     }
-  }
+
+    SortHulls(hulls_cv);
+    for (Hull& hull_cv : hulls_cv) {
+      SortPixels(hull_cv);
+    }
+
+    boost::mpi::communicator world;
+    if (world.rank() == 0) {
+      ASSERT_EQ(hulls.size(), hulls_cv.size());
+
+      for (size_t i = 0; i < hulls.size(); i++) {
+        EXPECT_TRUE(IsHullSubset(hulls[i], hulls_cv[i]));
+      }
+    }
 #endif
+  }
 }
-*/
