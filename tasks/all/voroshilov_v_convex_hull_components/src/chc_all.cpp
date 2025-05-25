@@ -79,6 +79,11 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::PreProcessingImpl() {
 }
 
 bool voroshilov_v_convex_hull_components_all::ChcTaskALL::RunImpl() {
+  int hw = static_cast<int>(std::thread::hardware_concurrency());
+  if (hw > 1) {
+    omp_set_num_threads(hw);
+  }
+
   std::vector<Component> components;
 
   auto start = std::chrono::high_resolution_clock::now();
