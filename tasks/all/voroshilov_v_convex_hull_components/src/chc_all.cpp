@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <boost/mpi/communicator.hpp>
-#include <utility>
 #include <vector>
 
 #include "../include/chc.hpp"

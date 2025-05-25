@@ -3,7 +3,6 @@
 #include <omp.h>
 
 #include <algorithm>
-#include <atomic>
 #include <boost/mpi/collectives.hpp>
 #include <boost/mpi/communicator.hpp>
 #include <boost/serialization/vector.hpp>  // NOLINT(misc-include-cleaner)

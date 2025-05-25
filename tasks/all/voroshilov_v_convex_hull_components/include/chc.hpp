@@ -3,7 +3,6 @@
 #include <boost/serialization/access.hpp>
 #include <cstddef>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 namespace voroshilov_v_convex_hull_components_all {
