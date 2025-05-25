@@ -23,7 +23,7 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::ValidationImpl() {
 
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-    std::cout << "\n Proc" << world.rank() << ", Validation: " << duration << " ms \n";
+    std::cout << "\n Proc" << world_.rank() << ", Validation: " << duration << " ms \n";
 
     return height > 0 && width > 0 && (height * width) == pixels_size;
   }
@@ -49,7 +49,7 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::PreProcessingImpl() {
 
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-    std::cout << "\n Proc" << world.rank() << ", PreProcessing: " << duration << " ms \n";
+    std::cout << "\n Proc" << world_.rank() << ", PreProcessing: " << duration << " ms \n";
   }
   return true;
 }
@@ -67,7 +67,7 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::RunImpl() {
 
   auto end = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-  std::cout << "\n Proc" << world.rank() << ", Run: " << duration << " ms \n";
+  std::cout << "\n Proc" << world_.rank() << ", Run: " << duration << " ms \n";
 
   return true;
 }
@@ -86,7 +86,7 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::PostProcessingImpl() {
 
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-    std::cout << "\n Proc" << world.rank() << ", PostProcessing: " << duration << " ms \n";
+    std::cout << "\n Proc" << world_.rank() << ", PostProcessing: " << duration << " ms \n";
   }
   return true;
 }
