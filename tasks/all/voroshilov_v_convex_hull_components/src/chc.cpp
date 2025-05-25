@@ -358,6 +358,22 @@ std::vector<std::vector<int>> voroshilov_v_convex_hull_components_all::PackIdxs(
   return split_idxs;
 }
 
+std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllOMP(std::vector<Component>& components) {
+  if (components.empty()) {
+    return {};
+  }
+
+  int components_size = static_cast<int>(components.size());
+  std::vector<Hull> hulls(components.size());
+
+#pragma omp parallel for schedule(dynamic)
+  for (int i = 0; i < components_size; i++) {
+    hulls[i] = QuickHull(components[i]);
+  }
+
+  return hulls;
+}
+
 std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(std::vector<Component>& components,
                                                                               int image_width) {
   boost::mpi::communicator world;

@@ -63,11 +63,20 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::RunImpl() {
     components = FindComponentsOMP(imageIn_);
   }
 
-  hullsOut_ = QuickHullAllMPIOMP(components, imageIn_.width);
-
   auto end = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-  std::cout << "\n Proc" << world_.rank() << ", Run: " << duration << " ms \n";
+  std::cout << "\n Proc" << world_.rank() << ", FindComponents: " << duration << " ms \n";
+
+  start = std::chrono::high_resolution_clock::now();
+
+  if (world_.size() <= 1) {
+    hullsOut_ = QuickHullAllOMP(components);
+  } else {
+    hullsOut_ = QuickHullAllMPIOMP(components, imageIn_.width);
+  }
+  end = std::chrono::high_resolution_clock::now();
+  duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+  std::cout << "\n Proc" << world_.rank() << ", QuickHullAll: " << duration << " ms \n";
 
   return true;
 }

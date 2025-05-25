@@ -89,6 +89,8 @@ void ComputePartition(int vec_size, int world_size, std::vector<int>& parts, std
 std::vector<std::vector<int>> PackIdxs(std::vector<Component>& components, int image_width, std::vector<int>& parts,
                                        std::vector<int>& offsets, std::vector<int>& comp_sizes);
 
+std::vector<Hull> QuickHullAllOMP(std::vector<Component>& components);
+
 std::vector<Hull> QuickHullAllMPIOMP(std::vector<Component>& components, int image_width);
 
 std::pair<std::vector<int>, std::vector<int>> PackHulls(std::vector<Hull>& hulls, Image& image);
