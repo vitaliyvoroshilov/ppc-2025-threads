@@ -236,14 +236,12 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsOM
 }
 
 std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponents(Image& image) {
-  Image tmp_image(image);
   std::vector<Component> components;
   int count = 0;
-  for (int y = 0; y < tmp_image.height; y++) {
-    for (int x = 0; x < tmp_image.width; x++) {
-      if (tmp_image.GetPixel(y, x) == 1) {
-        Component component =
-            DepthComponentSearchInArea(tmp_image.GetPixel(y, x), &tmp_image, count + 2, 0, tmp_image.height);
+  for (int y = 0; y < image.height; y++) {
+    for (int x = 0; x < image.width; x++) {
+      if (image.GetPixel(y, x) == 1) {
+        Component component = DepthComponentSearchInArea(image.GetPixel(y, x), &image, count + 2, 0, image.height);
         components.push_back(component);
         count++;
       }
@@ -496,11 +494,8 @@ std::pair<std::vector<int>, std::vector<int>> voroshilov_v_convex_hull_component
   return packed_vectors;
 }
 
-void voroshilov_v_convex_hull_components_all::PackHullsInplace(std::vector<Hull>& hulls, Image& image, int* hulls_indxs,
-                                                               int* pixels_indxs) {
-  int height = image.height;
-  int width = image.width;
-
+void voroshilov_v_convex_hull_components_all::PackHullsInplace(std::vector<Hull>& hulls, int width, int height,
+                                                               int* hulls_indxs, int* pixels_indxs) {
   std::fill(hulls_indxs, hulls_indxs + (height * width), 0);
   std::fill(pixels_indxs, pixels_indxs + (height * width), 0);
 

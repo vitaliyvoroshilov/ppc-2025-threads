@@ -97,7 +97,7 @@ std::vector<Hull> QuickHullAllMPIOMP(std::vector<Component>& components, int ima
 
 std::pair<std::vector<int>, std::vector<int>> PackHulls(std::vector<Hull>& hulls, Image& image);
 
-void PackHullsInplace(std::vector<Hull>& hulls, Image& image, int* hulls_indxs, int* pixels_indxs);
+void PackHullsInplace(std::vector<Hull>& hulls, int width, int height, int* hulls_indxs, int* pixels_indxs);
 
 std::vector<Hull> UnpackHulls(std::vector<int>& hulls_indexes, std::vector<int>& pixels_indexes, int height, int width,
                               size_t hulls_size);
