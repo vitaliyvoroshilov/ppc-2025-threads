@@ -132,6 +132,26 @@ bool IsHullSubset(Hull& hull_first, Hull& hull_second) {
   return i == smaller.size();  // if true then smaller is subset of larger
 }
 
+void CheckResultsWithOpencv(int height, int width, std::vector<int>& pixels, std::vector<Hull>& hulls) {
+  std::vector<Hull> hulls_cv = GetHullsWithOpencv(height, width, pixels);
+
+    SortHulls(hulls);
+    for (Hull& hull : hulls) {
+      SortPixels(hull);
+    }
+
+    SortHulls(hulls_cv);
+    for (Hull& hull_cv : hulls_cv) {
+      SortPixels(hull_cv);
+    }
+
+    ASSERT_EQ(hulls.size(), hulls_cv.size());
+
+    for (size_t i = 0; i < hulls.size(); i++) {
+      EXPECT_TRUE(IsHullSubset(hulls[i], hulls_cv[i]));
+    }
+}
+
 }  // namespace
 
 TEST(voroshilov_v_convex_hull_components_all, chc_pipeline_run) {
@@ -144,9 +164,8 @@ TEST(voroshilov_v_convex_hull_components_all, chc_pipeline_run) {
   std::vector<int> hulls_indexes_out(height * width);
   std::vector<int> pixels_indexes_out(height * width);
 
-  auto task_data_all = std::make_shared<ppc::core::TaskData>();
-
   boost::mpi::communicator world;
+  auto task_data_all = std::make_shared<ppc::core::TaskData>();
   if (world.rank() == 0) {
     task_data_all->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_height));
     task_data_all->inputs.emplace_back(reinterpret_cast<uint8_t*>(p_width));
@@ -179,23 +198,7 @@ TEST(voroshilov_v_convex_hull_components_all, chc_pipeline_run) {
     std::vector<Hull> hulls = UnpackHulls(hulls_indexes_out, pixels_indexes_out, height, width, hulls_size);
 
 #ifndef _WIN32
-    std::vector<Hull> hulls_cv = GetHullsWithOpencv(height, width, pixels);
-
-    SortHulls(hulls);
-    for (Hull& hull : hulls) {
-      SortPixels(hull);
-    }
-
-    SortHulls(hulls_cv);
-    for (Hull& hull_cv : hulls_cv) {
-      SortPixels(hull_cv);
-    }
-
-    ASSERT_EQ(hulls.size(), hulls_cv.size());
-
-    for (size_t i = 0; i < hulls.size(); i++) {
-      EXPECT_TRUE(IsHullSubset(hulls[i], hulls_cv[i]));
-    }
+    CheckResultsWithOpencv(height, width, pixels, hulls);
 #endif
   }
 }
@@ -244,26 +247,7 @@ TEST(voroshilov_v_convex_hull_components_all, chc_task_run) {
     std::vector<Hull> hulls = UnpackHulls(hulls_indexes_out, pixels_indexes_out, height, width, hulls_size);
 
 #ifndef _WIN32
-    std::vector<Hull> hulls_cv = GetHullsWithOpencv(height, width, pixels);
-
-    SortHulls(hulls);
-    for (Hull& hull : hulls) {
-      SortPixels(hull);
-    }
-
-    SortHulls(hulls_cv);
-    for (Hull& hull_cv : hulls_cv) {
-      SortPixels(hull_cv);
-    }
-
-    boost::mpi::communicator world;
-    if (world.rank() == 0) {
-      ASSERT_EQ(hulls.size(), hulls_cv.size());
-
-      for (size_t i = 0; i < hulls.size(); i++) {
-        EXPECT_TRUE(IsHullSubset(hulls[i], hulls_cv[i]));
-      }
-    }
+    CheckResultsWithOpencv(height, width, pixels, hulls);
 #endif
   }
 }

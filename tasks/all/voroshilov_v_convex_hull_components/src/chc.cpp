@@ -313,9 +313,55 @@ std::vector<Pixel> voroshilov_v_convex_hull_components_all::QuickHull(Component&
   return res_hull;
 }
 
+void voroshilov_v_convex_hull_components_all::ComputePartition(int vec_size, int world_size, std::vector<int>& parts,
+                                                               std::vector<int>& offsets) {
+  int base = vec_size / world_size;
+  int remainder = vec_size % world_size;
+  parts.resize(world_size);
+  offsets.resize(world_size);
+  for (int i = 0; i < world_size; i++) {
+    parts[i] = base;
+    if (remainder > 0) {
+      parts[i]++;
+      remainder--;
+    }
+    if (i == 0) {
+      offsets[i] = 0;
+    } else {
+      offsets[i] = offsets[i - 1] + parts[i - 1];
+    }
+  }
+}
+
+std::vector<std::vector<int>> voroshilov_v_convex_hull_components_all::PackIdxs(std::vector<Component>& components,
+                                                                                int image_width,
+                                                                                std::vector<int>& parts,
+                                                                                std::vector<int>& offsets,
+                                                                                std::vector<int>& comp_sizes) {
+  int world_size = static_cast<int>(parts.size());
+  std::vector<std::vector<int>> split_idxs(world_size);
+  for (int i = 0; i < world_size; i++) {
+    int part = parts[i];
+    int offset = offsets[i];
+    int total_pixels = 0;
+    for (int j = 0; j < part; j++) {
+      total_pixels += comp_sizes[offset + j];
+    }
+    split_idxs[i].reserve(total_pixels);
+    for (int j = 0; j < part; j++) {
+      Component comp = components[offset + j];
+      for (Pixel& p : comp) {
+        split_idxs[i].push_back((p.y * image_width) + p.x);
+      }
+    }
+  }
+  return split_idxs;
+}
+
 std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(std::vector<Component>& components,
                                                                               int image_width) {
   boost::mpi::communicator world;
+  // NOLINTNEXTLINE(misc-include-cleaner)
   boost::mpi::broadcast(world, image_width, 0);
 
   std::vector<int> comp_sizes;
@@ -325,46 +371,22 @@ std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(st
       comp_sizes.push_back(static_cast<int>(comp.size()));
     }
   }
+  // NOLINTNEXTLINE(misc-include-cleaner)
   boost::mpi::broadcast(world, comp_sizes, 0);
 
-  std::vector<int> parts(world.size());
-  std::vector<int> offsets(world.size());
+  std::vector<int> parts;
+  std::vector<int> offsets;
   if (world.rank() == 0) {
-    int base = static_cast<int>(components.size()) / world.size();
-    int remainder = static_cast<int>(components.size()) % world.size();
-    for (int i = 0; i < world.size(); i++) {
-      parts[i] = base;
-      if (remainder > 0) {
-        parts[i]++;
-        remainder--;
-      }
-      if (i == 0) {
-        offsets[i] = 0;
-      } else {
-        offsets[i] = offsets[i - 1] + parts[i - 1];
-      }
-    }
+    ComputePartition(static_cast<int>(components.size()), world.size(), parts, offsets);
   }
+  // NOLINTNEXTLINE(misc-include-cleaner)
   boost::mpi::broadcast(world, parts, 0);
+  // NOLINTNEXTLINE(misc-include-cleaner)
   boost::mpi::broadcast(world, offsets, 0);
 
-  std::vector<std::vector<int>> split_idxs(world.size());
+  std::vector<std::vector<int>> split_idxs;
   if (world.rank() == 0) {
-    for (int i = 0; i < world.size(); i++) {
-      int part = parts[i];
-      int offset = offsets[i];
-      int total_pixels = 0;
-      for (int j = 0; j < part; j++) {
-        total_pixels += comp_sizes[offset + j];
-      }
-      split_idxs[i].reserve(total_pixels);
-      for (int j = 0; j < part; j++) {
-        Component comp = components[offset + j];
-        for (Pixel& p : comp) {
-          split_idxs[i].push_back(p.y * image_width + p.x);
-        }
-      }
-    }
+    split_idxs = PackIdxs(components, image_width, parts, offsets, comp_sizes);
   }
 
   std::vector<int> local_idxs;
@@ -381,7 +403,7 @@ std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(st
       int idx = local_idxs[pos];
       int y = idx / image_width;
       int x = idx % image_width;
-      comp.emplace_back(Pixel{y, x, 1});
+      comp.emplace_back(y, x, 1);
     }
     local_components[i] = std::move(comp);
   }
