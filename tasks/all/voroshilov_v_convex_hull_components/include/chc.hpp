@@ -78,8 +78,6 @@ std::vector<Component> FindComponentsInArea(Image& tmp_image, int start_y, int e
 
 std::vector<Component> FindComponentsOMP(Image& image);
 
-std::vector<Component> FindComponents(Image& image);
-
 int CheckRotation(Pixel& first, Pixel& second, Pixel& third);
 
 Pixel FindFarthestPixel(std::vector<Pixel>& pixels, LineSegment& line_segment);
@@ -95,9 +93,7 @@ std::vector<Hull> QuickHullAllOMP(std::vector<Component>& components);
 
 std::vector<Hull> QuickHullAllMPIOMP(std::vector<Component>& components, int image_width);
 
-std::pair<std::vector<int>, std::vector<int>> PackHulls(std::vector<Hull>& hulls, Image& image);
-
-void PackHullsInplace(std::vector<Hull>& hulls, int width, int height, int* hulls_indxs, int* pixels_indxs);
+void PackHulls(std::vector<Hull>& hulls, int width, int height, int* hulls_indxs, int* pixels_indxs);
 
 std::vector<Hull> UnpackHulls(std::vector<int>& hulls_indexes, std::vector<int>& pixels_indexes, int height, int width,
                               size_t hulls_size);
