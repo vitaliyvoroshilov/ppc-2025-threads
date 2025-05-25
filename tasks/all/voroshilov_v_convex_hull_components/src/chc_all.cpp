@@ -131,12 +131,17 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::PostProcessingImpl() {
   if (world_.rank() == 0) {
     auto start = std::chrono::high_resolution_clock::now();
 
-    std::pair<std::vector<int>, std::vector<int>> packed_out = PackHulls(hullsOut_, imageIn_);
-    std::vector<int> hulls_indexes = packed_out.first;
-    std::vector<int> pixels_indexes = packed_out.second;
+    int *hulls_indxs = reinterpret_cast<int *>(task_data->outputs[0]);
+    int *pixels_indxs = reinterpret_cast<int *>(task_data->outputs[1]);
 
-    std::ranges::copy(hulls_indexes, reinterpret_cast<int *>(task_data->outputs[0]));
-    std::ranges::copy(pixels_indexes, reinterpret_cast<int *>(task_data->outputs[1]));
+    PackHullsInplace(hullsOut_, imageIn_, hulls_indxs, pixels_indxs);
+
+    // std::pair<std::vector<int>, std::vector<int>> packed_out = PackHulls(hullsOut_, imageIn_);
+    // std::vector<int> hulls_indexes = packed_out.first;
+    // std::vector<int> pixels_indexes = packed_out.second;
+
+    // std::ranges::copy(hulls_indexes, reinterpret_cast<int *>(task_data->outputs[0]));
+    // std::ranges::copy(pixels_indexes, reinterpret_cast<int *>(task_data->outputs[1]));
     task_data->outputs_count[0] = hullsOut_.size();
 
     auto end = std::chrono::high_resolution_clock::now();

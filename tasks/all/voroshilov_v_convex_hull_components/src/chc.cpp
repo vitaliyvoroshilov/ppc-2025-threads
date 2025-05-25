@@ -496,6 +496,27 @@ std::pair<std::vector<int>, std::vector<int>> voroshilov_v_convex_hull_component
   return packed_vectors;
 }
 
+void voroshilov_v_convex_hull_components_all::PackHullsInplace(std::vector<Hull>& hulls, Image& image, int* hulls_indxs,
+                                                               int* pixels_indxs) {
+  int height = image.height;
+  int width = image.width;
+
+  std::fill(hulls_indxs, hulls_indxs + (height * width), 0);
+  std::fill(pixels_indxs, pixels_indxs + (height * width), 0);
+
+  int hull_index = 1;
+  for (Hull& hull : hulls) {
+    int pixel_index = 1;
+    for (Pixel& p : hull) {
+      int pos = (p.y * width) + p.x;
+      hulls_indxs[pos] = hull_index;
+      pixels_indxs[pos] = pixel_index;
+      pixel_index++;
+    }
+    hull_index++;
+  }
+}
+
 std::vector<Hull> voroshilov_v_convex_hull_components_all::UnpackHulls(std::vector<int>& hulls_indexes,
                                                                        std::vector<int>& pixels_indexes, int height,
                                                                        int width, size_t hulls_size) {
