@@ -349,11 +349,11 @@ TEST(voroshilov_v_convex_hull_components_all, imageTest0Incorrect) {
   std::string src_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/0_image.png");
   std::string inc_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/0_incorrect.png");
 
-  bool res = ImageRunTest(src_path, exp_path);
+  bool res = ImageRunTest(src_path, inc_path);
 
   boost::mpi::communicator world;
   if (world.rank() == 0) {
-    ASSERT_TRUE(res);
+    ASSERT_FALSE(res);
   }
 }
 
@@ -373,11 +373,11 @@ TEST(voroshilov_v_convex_hull_components_all, imageTest1Incorrect) {
   std::string src_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/1_image.png");
   std::string inc_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/1_incorrect.png");
 
-  bool res = ImageRunTest(src_path, exp_path);
+  bool res = ImageRunTest(src_path, inc_path);
 
   boost::mpi::communicator world;
   if (world.rank() == 0) {
-    ASSERT_TRUE(res);
+    ASSERT_FALSE(res);
   }
 }
 
