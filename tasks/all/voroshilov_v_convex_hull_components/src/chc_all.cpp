@@ -1,9 +1,12 @@
 #include "../include/chc_all.hpp"
 
+#include <omp.h>
+
 #include <algorithm>
 #include <boost/mpi/communicator.hpp>
 #include <chrono>
 #include <iostream>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -26,8 +29,15 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::ValidationImpl() {
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     std::cout << "\n Proc" << world_.rank() << ", Validation: " << duration << " ms \n";
     int num_threads = ppc::util::GetPPCNumThreads();
-    int num_procs = world_.size();
-    std::cout << "num_threads=" << num_threads << " num_procs=" << num_procs << "\n";
+    int world_size = world_.size();
+    int omp_num_threads = omp_get_num_threads();
+    int omp_max_threads = omp_get_max_threads();
+    int hardware_concurency = static_cast<int>(std::thread::hardware_concurrency());
+    std::cout << "num_threads=" << num_threads << "\n";
+    std::cout << "world_size=" << world_size << "\n";
+    std::cout << "hardware_concurency=" << hardware_concurency << "\n";
+    std::cout << "omp_num_threads=" << omp_num_threads << "\n";
+    std::cout << "omp_max_threads=" << omp_max_threads << "\n";
 
     return height > 0 && width > 0 && (height * width) == pixels_size;
   }
@@ -55,8 +65,15 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::PreProcessingImpl() {
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     std::cout << "\n Proc" << world_.rank() << ", PreProcessing: " << duration << " ms \n";
     int num_threads = ppc::util::GetPPCNumThreads();
-    int num_procs = world_.size();
-    std::cout << "num_threads=" << num_threads << " num_procs=" << num_procs << "\n";
+    int world_size = world_.size();
+    int omp_num_threads = omp_get_num_threads();
+    int omp_max_threads = omp_get_max_threads();
+    int hardware_concurency = static_cast<int>(std::thread::hardware_concurrency());
+    std::cout << "num_threads=" << num_threads << "\n";
+    std::cout << "world_size=" << world_size << "\n";
+    std::cout << "hardware_concurency=" << hardware_concurency << "\n";
+    std::cout << "omp_num_threads=" << omp_num_threads << "\n";
+    std::cout << "omp_max_threads=" << omp_max_threads << "\n";
   }
   return true;
 }
@@ -74,8 +91,15 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::RunImpl() {
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
   std::cout << "\n Proc" << world_.rank() << ", FindComponents: " << duration << " ms \n";
   int num_threads = ppc::util::GetPPCNumThreads();
-  int num_procs = world_.size();
-  std::cout << "num_threads=" << num_threads << " num_procs=" << num_procs << "\n";
+  int world_size = world_.size();
+  int omp_num_threads = omp_get_num_threads();
+  int omp_max_threads = omp_get_max_threads();
+  int hardware_concurency = static_cast<int>(std::thread::hardware_concurrency());
+  std::cout << "num_threads=" << num_threads << "\n";
+  std::cout << "world_size=" << world_size << "\n";
+  std::cout << "hardware_concurency=" << hardware_concurency << "\n";
+  std::cout << "omp_num_threads=" << omp_num_threads << "\n";
+  std::cout << "omp_max_threads=" << omp_max_threads << "\n";
 
   start = std::chrono::high_resolution_clock::now();
 
@@ -88,8 +112,15 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::RunImpl() {
   duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
   std::cout << "\n Proc" << world_.rank() << ", QuickHullAll: " << duration << " ms \n";
   num_threads = ppc::util::GetPPCNumThreads();
-  num_procs = world_.size();
-  std::cout << "num_threads=" << num_threads << " num_procs=" << num_procs << "\n";
+  world_size = world_.size();
+  omp_num_threads = omp_get_num_threads();
+  omp_max_threads = omp_get_max_threads();
+  hardware_concurency = static_cast<int>(std::thread::hardware_concurrency());
+  std::cout << "num_threads=" << num_threads << "\n";
+  std::cout << "world_size=" << world_size << "\n";
+  std::cout << "hardware_concurency=" << hardware_concurency << "\n";
+  std::cout << "omp_num_threads=" << omp_num_threads << "\n";
+  std::cout << "omp_max_threads=" << omp_max_threads << "\n";
 
   return true;
 }
@@ -110,8 +141,15 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::PostProcessingImpl() {
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     std::cout << "\n Proc" << world_.rank() << ", PostProcessing: " << duration << " ms \n";
     int num_threads = ppc::util::GetPPCNumThreads();
-    int num_procs = world_.size();
-    std::cout << "num_threads=" << num_threads << " num_procs=" << num_procs << "\n";
+    int world_size = world_.size();
+    int omp_num_threads = omp_get_num_threads();
+    int omp_max_threads = omp_get_max_threads();
+    int hardware_concurency = static_cast<int>(std::thread::hardware_concurrency());
+    std::cout << "num_threads=" << num_threads << "\n";
+    std::cout << "world_size=" << world_size << "\n";
+    std::cout << "hardware_concurency=" << hardware_concurency << "\n";
+    std::cout << "omp_num_threads=" << omp_num_threads << "\n";
+    std::cout << "omp_max_threads=" << omp_max_threads << "\n";
   }
   return true;
 }
