@@ -78,6 +78,8 @@ std::vector<Component> FindComponentsInArea(Image& tmp_image, int start_y, int e
 
 std::vector<Component> FindComponentsOMP(Image& image);
 
+std::vector<Component> FindComponents(Image& image);
+
 int CheckRotation(Pixel& first, Pixel& second, Pixel& third);
 
 Pixel FindFarthestPixel(std::vector<Pixel>& pixels, LineSegment& line_segment);

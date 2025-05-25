@@ -235,6 +235,26 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsOM
   return components;
 }
 
+std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponents(Image& image) {
+  Image tmp_image(image);
+  std::vector<Component> components;
+  int count = 0;
+  for (int y = 0; y < tmp_image.height; y++) {
+    for (int x = 0; x < tmp_image.width; x++) {
+      if (tmp_image.GetPixel(y, x) == 1) {
+        Component component =
+            DepthComponentSearchInArea(tmp_image.GetPixel(y, x), &tmp_image, count + 2, 0, tmp_image.height);
+        components.push_back(component);
+        count++;
+      }
+    }
+  }
+  if (components.empty()) {
+    return {};
+  }
+  return components;
+}
+
 int voroshilov_v_convex_hull_components_all::CheckRotation(Pixel& first, Pixel& second, Pixel& third) {
   return ((second.x - first.x) * (third.y - second.y)) - ((second.y - first.y) * (third.x - second.x));
 }
