@@ -24,6 +24,9 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::ValidationImpl() {
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     std::cout << "\n Proc" << world_.rank() << ", Validation: " << duration << " ms \n";
+    int num_threads = ppc::util::GetPPCNumThreads();
+    int num_procs = world_.size();
+    std::cout << "num_threads=" << num_threads << " num_procs=" << num_procs << "\n";
 
     return height > 0 && width > 0 && (height * width) == pixels_size;
   }
@@ -50,6 +53,9 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::PreProcessingImpl() {
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     std::cout << "\n Proc" << world_.rank() << ", PreProcessing: " << duration << " ms \n";
+    int num_threads = ppc::util::GetPPCNumThreads();
+    int num_procs = world_.size();
+    std::cout << "num_threads=" << num_threads << " num_procs=" << num_procs << "\n";
   }
   return true;
 }
@@ -66,6 +72,9 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::RunImpl() {
   auto end = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
   std::cout << "\n Proc" << world_.rank() << ", FindComponents: " << duration << " ms \n";
+  int num_threads = ppc::util::GetPPCNumThreads();
+  int num_procs = world_.size();
+  std::cout << "num_threads=" << num_threads << " num_procs=" << num_procs << "\n";
 
   start = std::chrono::high_resolution_clock::now();
 
@@ -77,6 +86,9 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::RunImpl() {
   end = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
   std::cout << "\n Proc" << world_.rank() << ", QuickHullAll: " << duration << " ms \n";
+  int num_threads = ppc::util::GetPPCNumThreads();
+  int num_procs = world_.size();
+  std::cout << "num_threads=" << num_threads << " num_procs=" << num_procs << "\n";
 
   return true;
 }
@@ -96,6 +108,9 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::PostProcessingImpl() {
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     std::cout << "\n Proc" << world_.rank() << ", PostProcessing: " << duration << " ms \n";
+    int num_threads = ppc::util::GetPPCNumThreads();
+    int num_procs = world_.size();
+    std::cout << "num_threads=" << num_threads << " num_procs=" << num_procs << "\n";
   }
   return true;
 }
