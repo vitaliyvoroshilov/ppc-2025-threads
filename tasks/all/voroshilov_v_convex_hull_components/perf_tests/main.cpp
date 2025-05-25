@@ -88,26 +88,6 @@ std::vector<Hull> GetHullsWithOpencv(int height, int width, std::vector<int>& pi
   return hulls_cv;
 }
 
-void CheckResultsWithOpencv(int height, int width, std::vector<int>& pixels, std::vector<Hull>& hulls) {
-  std::vector<Hull> hulls_cv = GetHullsWithOpencv(height, width, pixels);
-
-  SortHulls(hulls);
-  for (Hull& hull : hulls) {
-    SortPixels(hull);
-  }
-
-  SortHulls(hulls_cv);
-  for (Hull& hull_cv : hulls_cv) {
-    SortPixels(hull_cv);
-  }
-
-  ASSERT_EQ(hulls.size(), hulls_cv.size());
-
-  for (size_t i = 0; i < hulls.size(); i++) {
-    EXPECT_TRUE(IsHullSubset(hulls[i], hulls_cv[i]));
-  }
-}
-
 #endif
 
 void SortPixels(Hull& hull) {
@@ -151,6 +131,30 @@ bool IsHullSubset(Hull& hull_first, Hull& hull_second) {
 
   return i == smaller.size();  // if true then smaller is subset of larger
 }
+
+#ifndef _WIN32
+
+void CheckResultsWithOpencv(int height, int width, std::vector<int>& pixels, std::vector<Hull>& hulls) {
+  std::vector<Hull> hulls_cv = GetHullsWithOpencv(height, width, pixels);
+
+  SortHulls(hulls);
+  for (Hull& hull : hulls) {
+    SortPixels(hull);
+  }
+
+  SortHulls(hulls_cv);
+  for (Hull& hull_cv : hulls_cv) {
+    SortPixels(hull_cv);
+  }
+
+  ASSERT_EQ(hulls.size(), hulls_cv.size());
+
+  for (size_t i = 0; i < hulls.size(); i++) {
+    EXPECT_TRUE(IsHullSubset(hulls[i], hulls_cv[i]));
+  }
+}
+
+#endif
 
 }  // namespace
 
