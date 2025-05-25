@@ -135,21 +135,21 @@ bool IsHullSubset(Hull& hull_first, Hull& hull_second) {
 void CheckResultsWithOpencv(int height, int width, std::vector<int>& pixels, std::vector<Hull>& hulls) {
   std::vector<Hull> hulls_cv = GetHullsWithOpencv(height, width, pixels);
 
-    SortHulls(hulls);
-    for (Hull& hull : hulls) {
-      SortPixels(hull);
-    }
+  SortHulls(hulls);
+  for (Hull& hull : hulls) {
+    SortPixels(hull);
+  }
 
-    SortHulls(hulls_cv);
-    for (Hull& hull_cv : hulls_cv) {
-      SortPixels(hull_cv);
-    }
+  SortHulls(hulls_cv);
+  for (Hull& hull_cv : hulls_cv) {
+    SortPixels(hull_cv);
+  }
 
-    ASSERT_EQ(hulls.size(), hulls_cv.size());
+  ASSERT_EQ(hulls.size(), hulls_cv.size());
 
-    for (size_t i = 0; i < hulls.size(); i++) {
-      EXPECT_TRUE(IsHullSubset(hulls[i], hulls_cv[i]));
-    }
+  for (size_t i = 0; i < hulls.size(); i++) {
+    EXPECT_TRUE(IsHullSubset(hulls[i], hulls_cv[i]));
+  }
 }
 
 }  // namespace
