@@ -133,7 +133,7 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::PostProcessingImpl() {
 
     int *hulls_indxs = reinterpret_cast<int *>(task_data->outputs[0]);
     int *pixels_indxs = reinterpret_cast<int *>(task_data->outputs[1]);
-    PackHullsInplace(hullsOut_, imageIn_, hulls_indxs, pixels_indxs);
+    PackHullsInplace(hullsOut_, imageIn_.width, imageIn_.height, hulls_indxs, pixels_indxs);
     task_data->outputs_count[0] = hullsOut_.size();
 
     auto end = std::chrono::high_resolution_clock::now();
