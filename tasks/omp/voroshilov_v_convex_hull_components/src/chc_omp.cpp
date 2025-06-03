@@ -36,20 +36,16 @@ bool voroshilov_v_convex_hull_components_omp::ChcTaskOMP::RunImpl() {
   
   std::vector<Component> components = FindComponentsOMP(image);
 
-  std::vector<Hull> hulls = QuickHullAllOMP(components);
-  hulls_size_out = hulls.size();
+  hulls_out_ = QuickHullAllOMP(components);
 
-  std::pair<std::vector<int>, std::vector<int>> packed_out = PackHulls(hulls, image);
-  hulls_indexes_out_ = packed_out.first;
-  pixels_indexes_out_ = packed_out.second;
-  
   return true;
 }
 
 bool voroshilov_v_convex_hull_components_omp::ChcTaskOMP::PostProcessingImpl() {
-  std::ranges::copy(hulls_indexes_out_, reinterpret_cast<int *>(task_data->outputs[0]));
-  std::ranges::copy(pixels_indexes_out_, reinterpret_cast<int *>(task_data->outputs[1]));
-  task_data->outputs_count[0] = hulls_size_out;
+  int *hulls_indxs = reinterpret_cast<int *>(task_data->outputs[0]);
+  int *pixels_indxs = reinterpret_cast<int *>(task_data->outputs[1]);
+  PackHulls(hulls_out_, width_in_, height_in_, hulls_indxs, pixels_indxs);
+  task_data->outputs_count[0] = hulls_out_.size();
 
   return true;
 }

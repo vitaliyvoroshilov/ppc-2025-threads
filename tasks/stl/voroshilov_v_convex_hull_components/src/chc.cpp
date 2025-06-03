@@ -325,43 +325,22 @@ std::vector<Hull> voroshilov_v_convex_hull_components_stl::QuickHullAllSTL(std::
   return hulls;
 }
 
-std::pair<std::vector<int>, std::vector<int>> voroshilov_v_convex_hull_components_stl::PackHulls(
-    std::vector<Hull>& hulls, Image& image) {
-  int height = image.height;
-  int width = image.width;
+void voroshilov_v_convex_hull_components_stl::PackHulls(std::vector<Hull>& hulls, int width, int height,
+                                                        int* hulls_indxs, int* pixels_indxs) {
+  std::fill(hulls_indxs, hulls_indxs + (height * width), 0);
+  std::fill(pixels_indxs, pixels_indxs + (height * width), 0);
 
-  std::vector<int> hulls_indexes(height * width, 0);
-  std::vector<int> pixels_indexes(height * width, 0);
-  std::atomic<int> uniq_hull_index(1);
-
-  std::vector<std::thread> threads;
-  size_t num_threads = ppc::util::GetPPCNumThreads();
-  size_t chunk = (hulls.size() + num_threads - 1) / num_threads;
-
-  for (size_t t = 0; t < num_threads; t++) {
-    size_t h1 = t * chunk;
-    size_t h2 = std::min(h1 + chunk, hulls.size());
-    threads.emplace_back([=, &hulls, &hulls_indexes, &pixels_indexes, &uniq_hull_index]() {
-      for (size_t h = h1; h < h2; h++) {
-        int pixel_index = 1;
-        int pixels_size = static_cast<int>(hulls[h].size());
-        int hull_index = uniq_hull_index.fetch_add(1);
-
-        for (int j = 0; j < pixels_size; j++) {
-          hulls_indexes[(hulls[h][j].y * width) + hulls[h][j].x] = hull_index;
-          pixels_indexes[(hulls[h][j].y * width) + hulls[h][j].x] = pixel_index;
-          pixel_index++;
-        }
-      }
-    });
+  int hull_index = 1;
+  for (Hull& hull : hulls) {
+    int pixel_index = 1;
+    for (Pixel& p : hull) {
+      int pos = (p.y * width) + p.x;
+      hulls_indxs[pos] = hull_index;
+      pixels_indxs[pos] = pixel_index;
+      pixel_index++;
+    }
+    hull_index++;
   }
-
-  for (auto& th : threads) {
-    th.join();
-  }
-
-  std::pair<std::vector<int>, std::vector<int>> packed_vectors(hulls_indexes, pixels_indexes);
-  return packed_vectors;
 }
 
 std::vector<Hull> voroshilov_v_convex_hull_components_stl::UnpackHulls(std::vector<int>& hulls_indexes,

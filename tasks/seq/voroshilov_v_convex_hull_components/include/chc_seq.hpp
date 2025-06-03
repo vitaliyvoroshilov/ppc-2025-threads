@@ -21,9 +21,7 @@ class ChcTaskSequential : public ppc::core::Task {
   int width_in_;
   std::vector<int> pixels_in_;
 
-  size_t hulls_size_out;
-  std::vector<int> hulls_indexes_out_;
-  std::vector<int> pixels_indexes_out_;
+  std::vector<Hull> hulls_out_;
 };
 
 }  // namespace voroshilov_v_convex_hull_components_seq

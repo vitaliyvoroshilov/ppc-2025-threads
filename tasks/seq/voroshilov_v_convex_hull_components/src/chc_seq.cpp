@@ -35,20 +35,16 @@ bool voroshilov_v_convex_hull_components_seq::ChcTaskSequential::RunImpl() {
   
   std::vector<Component> components = FindComponents(image);
 
-  std::vector<Hull> hulls = QuickHullAll(components);
-  hulls_size_out = hulls.size();
-
-  std::pair<std::vector<int>, std::vector<int>> packed_out = PackHulls(hulls, image);
-  hulls_indexes_out_ = packed_out.first;
-  pixels_indexes_out_ = packed_out.second;
+  hulls_out_ = QuickHullAll(components);
 
   return true;
 }
 
 bool voroshilov_v_convex_hull_components_seq::ChcTaskSequential::PostProcessingImpl() {
-  std::ranges::copy(hulls_indexes_out_, reinterpret_cast<int *>(task_data->outputs[0]));
-  std::ranges::copy(pixels_indexes_out_, reinterpret_cast<int *>(task_data->outputs[1]));
-  task_data->outputs_count[0] = hulls_size_out;
+  int *hulls_indxs = reinterpret_cast<int *>(task_data->outputs[0]);
+  int *pixels_indxs = reinterpret_cast<int *>(task_data->outputs[1]);
+  PackHulls(hulls_out_, width_in_, height_in_, hulls_indxs, pixels_indxs);
+  task_data->outputs_count[0] = hulls_out_.size();
 
   return true;
 }
