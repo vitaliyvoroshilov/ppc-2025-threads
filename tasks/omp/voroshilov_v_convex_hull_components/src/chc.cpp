@@ -221,13 +221,6 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
 
   MergeComponentsAcrossAreas(components, tmp_image, area_height, end_y);
 
-  int size = static_cast<int>(components.size());
-#pragma omp parallel for schedule(dynamic)
-  for (int i = 0; i < size; i++) {
-    std::ranges::sort(components[i],
-                      [](const Pixel& p1, const Pixel& p2) { return (p1.y < p2.y || (p1.y == p2.y && p1.x < p2.x)); });
-  }
-
   return components;
 }
 
