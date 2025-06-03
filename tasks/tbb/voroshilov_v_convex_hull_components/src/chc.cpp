@@ -228,16 +228,6 @@ std::vector<Component> voroshilov_v_convex_hull_components_tbb::FindComponentsTB
 
   MergeComponentsAcrossAreas(components, tmp_image, area_height, end_y);
 
-  int size = static_cast<int>(components.size());
-
-  arena.execute([&] {
-    oneapi::tbb::parallel_for(0, size, [&](int i) {
-      std::ranges::sort(components[i], [](const Pixel& p1, const Pixel& p2) {
-        return (p1.y < p2.y || (p1.y == p2.y && p1.x < p2.x));
-      });
-    });
-  });
-
   return components;
 }
 

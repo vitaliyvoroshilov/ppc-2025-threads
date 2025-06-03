@@ -217,24 +217,6 @@ std::vector<Component> voroshilov_v_convex_hull_components_stl::FindComponentsST
 
   MergeComponentsAcrossAreas(components, tmp_image, chunk_height, y2);
 
-  int components_size = static_cast<int>(components.size());
-  std::vector<std::thread> threads2;
-  int chunk_components = (components_size + num_threads - 1) / num_threads;
-  for (int t = 0; t < num_threads; t++) {
-    int c1 = t * chunk_components;
-    int c2 = std::min(c1 + chunk_components, components_size);
-    threads2.emplace_back([=, &components]() {
-      for (int c = c1; c < c2; c++) {
-        std::ranges::sort(components[c], [](const Pixel& p1, const Pixel& p2) {
-          return (p1.y < p2.y || (p1.y == p2.y && p1.x < p2.x));
-        });
-      }
-    });
-  }
-  for (auto& th : threads2) {
-    th.join();
-  }
-
   return components;
 }
 
