@@ -36,11 +36,10 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::PreProcessingImpl() {
 }
 
 bool voroshilov_v_convex_hull_components_all::ChcTaskALL::RunImpl() {
-  Image image(height_in_, width_in_, pixels_in_);
-
   std::vector<Component> components;
 
   if (world_.rank() == 0) {
+    Image image(height_in_, width_in_, pixels_in_);
     components = FindComponentsOMP(image);
   }
 
