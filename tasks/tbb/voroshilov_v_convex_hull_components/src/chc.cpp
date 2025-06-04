@@ -263,10 +263,10 @@ std::vector<Pixel> voroshilov_v_convex_hull_components_tbb::QuickHull(Component&
   Pixel right = component[0];
 
   for (Pixel& pixel : component) {
-    if (pixel.x < left.x) {
+    if ((pixel.x < left.x) || (pixel.x == left.x && pixel.y < left.y)) {
       left = pixel;
     }
-    if (pixel.x > right.x) {
+    if ((pixel.x > right.x) || (pixel.x == right.x && pixel.y > right.y)) {
       right = pixel;
     }
   }
