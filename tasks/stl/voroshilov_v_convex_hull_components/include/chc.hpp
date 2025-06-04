@@ -2,7 +2,6 @@
 
 #include <cstddef>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 namespace voroshilov_v_convex_hull_components_stl {

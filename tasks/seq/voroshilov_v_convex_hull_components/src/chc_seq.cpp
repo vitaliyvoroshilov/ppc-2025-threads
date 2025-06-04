@@ -1,7 +1,6 @@
 #include "seq/voroshilov_v_convex_hull_components/include/chc_seq.hpp"
 
 #include <algorithm>
-#include <utility>
 #include <vector>
 
 #include "seq/voroshilov_v_convex_hull_components/include/chc.hpp"

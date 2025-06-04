@@ -4,7 +4,6 @@
 #include <cmath>
 #include <cstddef>
 #include <stack>
-#include <utility>
 #include <vector>
 
 using namespace voroshilov_v_convex_hull_components_seq;

@@ -3,7 +3,6 @@
 #include <omp.h>
 
 #include <algorithm>
-#include <atomic>
 #include <cmath>
 #include <cstddef>
 #include <stack>

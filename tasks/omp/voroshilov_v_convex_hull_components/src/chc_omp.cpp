@@ -1,7 +1,6 @@
 #include "../include/chc_omp.hpp"
 
 #include <algorithm>
-#include <utility>
 #include <vector>
 
 #include "../include/chc.hpp"
