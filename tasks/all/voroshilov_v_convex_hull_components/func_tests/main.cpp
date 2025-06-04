@@ -357,6 +357,18 @@ TEST(voroshilov_v_convex_hull_components_all, imageTest0Incorrect) {
   }
 }
 
+TEST(voroshilov_v_convex_hull_components_all, imageTest1) {
+  std::string src_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/1_image.png");
+  std::string exp_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/1_expected.png");
+
+  bool res = ImageRunTest(src_path, exp_path);
+
+  boost::mpi::communicator world;
+  if (world.rank() == 0) {
+    ASSERT_TRUE(res);
+  }
+}
+
 TEST(voroshilov_v_convex_hull_components_all, imageTest1Incorrect) {
   std::string src_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/1_image.png");
   std::string inc_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/1_incorrect.png");
@@ -372,6 +384,30 @@ TEST(voroshilov_v_convex_hull_components_all, imageTest1Incorrect) {
 TEST(voroshilov_v_convex_hull_components_all, imageTest2) {
   std::string src_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/2_image.png");
   std::string exp_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/2_expected.png");
+
+  bool res = ImageRunTest(src_path, exp_path);
+
+  boost::mpi::communicator world;
+  if (world.rank() == 0) {
+    ASSERT_TRUE(res);
+  }
+}
+
+TEST(voroshilov_v_convex_hull_components_all, imageTest3) {
+  std::string src_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/3_image.png");
+  std::string exp_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/3_expected.png");
+
+  bool res = ImageRunTest(src_path, exp_path);
+
+  boost::mpi::communicator world;
+  if (world.rank() == 0) {
+    ASSERT_TRUE(res);
+  }
+}
+
+TEST(voroshilov_v_convex_hull_components_all, imageTest4) {
+  std::string src_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/4_image.png");
+  std::string exp_path = ppc::util::GetAbsolutePath("all/voroshilov_v_convex_hull_components/data/4_expected.png");
 
   bool res = ImageRunTest(src_path, exp_path);
 
