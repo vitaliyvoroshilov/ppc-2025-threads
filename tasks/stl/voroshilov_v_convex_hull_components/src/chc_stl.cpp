@@ -32,7 +32,7 @@ bool voroshilov_v_convex_hull_components_stl::ChcTaskSTL::PreProcessingImpl() {
 
 bool voroshilov_v_convex_hull_components_stl::ChcTaskSTL::RunImpl() {
   Image image(height_in_, width_in_, pixels_in_);
-  
+
   std::vector<Component> components = FindComponentsSTL(image);
 
   hulls_out_ = QuickHullAllSTL(components);

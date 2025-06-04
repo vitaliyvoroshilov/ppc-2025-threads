@@ -31,7 +31,7 @@ bool voroshilov_v_convex_hull_components_seq::ChcTaskSequential::PreProcessingIm
 
 bool voroshilov_v_convex_hull_components_seq::ChcTaskSequential::RunImpl() {
   Image image(height_in_, width_in_, pixels_in_);
-  
+
   std::vector<Component> components = FindComponents(image);
 
   hulls_out_ = QuickHullAll(components);

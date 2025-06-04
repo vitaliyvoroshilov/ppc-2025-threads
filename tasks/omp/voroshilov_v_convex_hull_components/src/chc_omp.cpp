@@ -32,7 +32,7 @@ bool voroshilov_v_convex_hull_components_omp::ChcTaskOMP::PreProcessingImpl() {
 
 bool voroshilov_v_convex_hull_components_omp::ChcTaskOMP::RunImpl() {
   Image image(height_in_, width_in_, pixels_in_);
-  
+
   std::vector<Component> components = FindComponentsOMP(image);
 
   hulls_out_ = QuickHullAllOMP(components);

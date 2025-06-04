@@ -32,7 +32,7 @@ bool voroshilov_v_convex_hull_components_tbb::ChcTaskTBB::PreProcessingImpl() {
 
 bool voroshilov_v_convex_hull_components_tbb::ChcTaskTBB::RunImpl() {
   Image image(height_in_, width_in_, pixels_in_);
-  
+
   std::vector<Component> components = FindComponentsTBB(image);
 
   hulls_out_ = QuickHullAllTBB(components);
