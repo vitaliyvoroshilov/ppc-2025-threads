@@ -43,7 +43,7 @@ struct LineSegment {
 using Component = std::vector<Pixel>;
 
 using Hull = std::vector<Pixel>;
-
+/*
 class UnionFind {
  public:
   std::unordered_map<int, int> roots;
@@ -53,15 +53,15 @@ class UnionFind {
   int FindRoot(int x);
   void Union(int x, int y);
 };
-
-void CheckBoundaryPixels(UnionFind* union_find, Image& image, int y, int x);
+*/
+//void CheckBoundaryPixels(UnionFind* union_find, Image& image, int y, int x);
 
 void MergeComponentsAcrossAreas(std::vector<Component>& components, Image& image, int area_height,
                                 std::vector<int>& end_y);
 
-Component DepthComponentSearchInArea(Pixel start_pixel, Image* tmp_image, int index, int start_y, int end_y);
+void DepthComponentSearchInArea(std::vector<int>& labels, Image& image, int sy, int sx, int index, int start_y, int end_y);
 
-std::vector<Component> FindComponentsInArea(Image& tmp_image, int start_y, int end_y, int index_offset);
+void FindComponentsInArea(std::vector<int>& labels, Image& tmp_image, int start_y, int end_y, int index_offset);
 
 std::vector<Component> FindComponentsOMP(Image& image);
 
