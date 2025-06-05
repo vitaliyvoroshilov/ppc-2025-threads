@@ -3,10 +3,8 @@
 #include <omp.h>
 
 #include <algorithm>
-#include <chrono>
 #include <cmath>
 #include <cstddef>
-#include <iostream>
 #include <stack>
 #include <unordered_map>
 #include <utility>
@@ -36,12 +34,14 @@ Image::Image(int hght, int wdth, std::vector<int> pxls) {
 Pixel& Image::GetPixel(int y, int x) { return pixels[(y * width) + x]; }
 
 LineSegment::LineSegment(Pixel& a_param, Pixel& b_param) : a(a_param), b(b_param) {}
-/*
-int UnionFind::FindRoot(int x) {
-  if (roots.find(x) == roots.end()) {
-    roots[x] = x;
-    ranks[x] = 1;
+
+UnionFind::UnionFind(int n) : roots(n), ranks(n, 1) {
+  for (int i = 0; i < n; i++) {
+    roots[i] = i;
   }
+}
+
+int UnionFind::FindRoot(int x) {
   if (roots[x] != x) {
     roots[x] = FindRoot(roots[x]);
   }
@@ -62,105 +62,43 @@ void UnionFind::Union(int x, int y) {
     }
   }
 }
-*/
-class UnionFind {
-public:
-  // parent[i] = родитель для метки i; ranks[i] = ранг (= примерная высота дерева)
-  std::vector<int> parent;
-  std::vector<int> ranks;
 
-  // Конструктор, где N — это число меток, которые мы хотим уметь обрабатывать (включая запас)
-  explicit UnionFind(int N) {
-    parent.resize(N);
-    ranks.resize(N, 1);
-    // Инициализируем так, чтобы каждая метка была своим же родителем
-    for (int i = 0; i < N; ++i) {
-      parent[i] = i;
-    }
-  }
-
-  int FindRoot(int x) {
-    // Обычный путь с “сжатием пути”
-    if (parent[x] != x) {
-      parent[x] = FindRoot(parent[x]);
-    }
-    return parent[x];
-  }
-
-  void Union(int x, int y) {
-    int rx = FindRoot(x);
-    int ry = FindRoot(y);
-    if (rx == ry) return;
-    // union by rank
-    if (ranks[rx] > ranks[ry]) {
-      parent[ry] = rx;
-    } else if (ranks[rx] < ranks[ry]) {
-      parent[rx] = ry;
-    } else {
-      parent[ry] = rx;
-      ranks[rx]++;
-    }
-  }
-};
-/*
-void voroshilov_v_convex_hull_components_omp::CheckBoundaryPixels(UnionFind* union_find, Image& image, int y, int x) {
-  Pixel p1 = image.GetPixel(y, x);
-
-  Pixel p2 = image.GetPixel(y + 1, x);
-  if (p1.value > 1 && p2.value > 1) {
-    union_find->Union(p1.value, p2.value);
-    return;
-  }
-
-  if (x > 0) {
-    Pixel p3 = image.GetPixel(y + 1, x - 1);
-    if (p1.value > 1 && p3.value > 1) {
-      union_find->Union(p1.value, p3.value);
-      return;
-    }
-  }
-  if (x < image.width - 1) {
-    Pixel p4 = image.GetPixel(y + 1, x + 1);
-    if (p1.value > 1 && p4.value > 1) {
-      union_find->Union(p1.value, p4.value);
-    }
-  }
-}
-
-void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::vector<Component>& components,
-                                                                         Image& image, int area_height,
-                                                                         std::vector<int>& end_y) {
-  UnionFind union_find;
-
-  int width = image.width;
+std::vector<Component> voroshilov_v_convex_hull_components_omp::LabelsToComponents(std::vector<int>& labels,
+                                                                                   Image& image, int num_components) {
   int height = image.height;
+  int width = image.width;
+  int n = height * width;
 
-  for (int endy : end_y) {
-    int y = endy - 1;
-    if (y != height - 1) {
-      for (int x = 0; x < width; x++) {
-        CheckBoundaryPixels(&union_find, image, y, x);
-      }
+  std::unordered_map<int, std::vector<int>> groups;
+  groups.reserve(num_components);
+
+  for (int i = 0; i < n; ++i) {
+    int lab = labels[i];
+    if (lab > 1) {
+      groups[lab].push_back(i);
     }
   }
 
-  std::unordered_map<int, Component> merged_components;
-  for (Component& component : components) {
-    int new_id = union_find.FindRoot(component[0].value);
-    if (merged_components.find(new_id) == merged_components.end()) {
-      merged_components[new_id] = Component();
-    }
-    merged_components[new_id].insert(merged_components[new_id].end(), component.begin(), component.end());
-  }
+  std::vector<Component> components;
+  components.reserve(groups.size());
 
-  components.clear();
-  for (auto& entry : merged_components) {
-    components.push_back(entry.second);
+  for (auto& kv : groups) {
+    int root_label = kv.first;
+    const std::vector<int>& idxs = kv.second;
+    Component comp;
+    comp.reserve(idxs.size());
+    for (int i : idxs) {
+      int y = i / width;
+      int x = i % width;
+      comp.emplace_back(y, x, root_label);
+    }
+    components.push_back(std::move(comp));
   }
+  return components;
 }
-*/
-void voroshilov_v_convex_hull_components_omp::DepthComponentSearchInArea(std::vector<int>& labels, Image& image, int sy, int sx, 
-                                                                              int index, int start_y, int end_y) {
+
+void voroshilov_v_convex_hull_components_omp::DepthComponentSearchInArea(std::vector<int>& labels, Image& image, int sy,
+                                                                         int sx, int index, int start_y, int end_y) {
   const int step_y[8] = {1, 1, 1, 0, 0, -1, -1, -1};  // Offsets by Y (up, stand, down)
   const int step_x[8] = {-1, 0, 1, -1, 1, -1, 0, 1};  // Offsets by X (left, stand, right)
 
@@ -178,7 +116,7 @@ void voroshilov_v_convex_hull_components_omp::DepthComponentSearchInArea(std::ve
     for (int i = 0; i < 8; i++) {
       int ny = cy + step_y[i];
       int nx = cx + step_x[i];
-      if (ny < start_y || ny >= end_y || nx < 0 || nx >= width) continue;
+      if (ny >= end_y || ny < start_y || nx >= width || nx < 0) continue;
       int next_index = ny * width + nx;
       if (image.pixels[next_index] == 1 && labels[next_index] == 0) {
         labels[next_index] = index;
@@ -188,56 +126,24 @@ void voroshilov_v_convex_hull_components_omp::DepthComponentSearchInArea(std::ve
   }
 }
 
-void voroshilov_v_convex_hull_components_omp::FindComponentsInArea(std::vector<int>& labels, Image& image, int start_y,
-                                                                                     int end_y, int index_offset) {
+int voroshilov_v_convex_hull_components_omp::FindComponentsInArea(std::vector<int>& labels, Image& image, int start_y,
+                                                                  int end_y, int index_offset) {
   int width = image.width;
   int offset = index_offset;  // unique index in this area
+  int num_components = 0;
 
   for (int y = start_y; y < end_y; y++) {
     for (int x = 0; x < width; x++) {
       int index = y * width + x;
       if (image.pixels[index] == 1 && labels[index] == 0) {
         DepthComponentSearchInArea(labels, image, y, x, offset, start_y, end_y);
+        num_components++;
         offset++;
       }
     }
   }
-}
 
-std::vector<Component> LabelsToComponents(const std::vector<int>& labels, const Image& image) {
-    int H = image.height;
-    int W = image.width;
-    int N = H * W;
-
-    // 1) Сгруппируем индексы i по метке labels[i]
-    std::unordered_map<int, std::vector<int>> groups;
-    groups.reserve(N / 8);
-
-    for (int i = 0; i < N; ++i) {
-        int lab = labels[i];
-        if (lab > 1) {
-            groups[lab].push_back(i);
-        }
-    }
-
-    // 2) Для каждой группы строим Component = vector<Pixel>
-    std::vector<Component> components;
-    components.reserve(groups.size());
-
-    for (auto& kv : groups) {
-        int root_label = kv.first;
-        const std::vector<int>& idxs = kv.second;
-        Component comp;
-        comp.reserve(idxs.size());
-        for (int i : idxs) {
-            int y = i / W;
-            int x = i % W;
-            comp.emplace_back(y, x, root_label);
-        }
-        components.push_back(std::move(comp));
-    }
-
-    return components;
+  return num_components;
 }
 
 std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOMP(Image& image) {
@@ -246,9 +152,6 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
   int n = height * width;
 
   std::vector<int> labels(n, 0);
-
-  auto start = std::chrono::high_resolution_clock::now();
-
   int num_threads = omp_get_max_threads();
 
   int area_height = height / num_threads;
@@ -280,33 +183,23 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
     }
   }
 
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double, std::milli> duration = end - start;
-  std::cout << "[OMP Distribution in FindComponents: " << duration.count() << " ms]" << std::endl;
-
-  start = std::chrono::high_resolution_clock::now();
+  int num_components = 0;
 
 #pragma omp parallel
   {
     int thread_id = omp_get_thread_num();
 
-    FindComponentsInArea(labels, image, start_y[thread_id], end_y[thread_id], index_offset[thread_id]);
+    num_components +=
+        FindComponentsInArea(labels, image, start_y[thread_id], end_y[thread_id], index_offset[thread_id]);
   }
-
-  end = std::chrono::high_resolution_clock::now();
-  duration = end - start;
-  std::cout << "[OMP Parallel in FindComponents: " << duration.count() << " ms]" << std::endl;
-
-  start = std::chrono::high_resolution_clock::now();
 
   int max_raw_label = 0;
   for (int v : labels) {
     if (v > max_raw_label) max_raw_label = v;
   }
-  // Создаем UF, способный вместить все метки [0 .. max_raw_label]
   UnionFind uf(max_raw_label + 1);
-  
-  for (int i = 0; i < num_threads; ++i) {
+
+  for (int i = 0; i < num_threads; i++) {
     int y = end_y[i] - 1;
     if (y < 0 || y >= height - 1) continue;
     int base = y * width;
@@ -317,34 +210,24 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
       int id2 = labels[base_down + x];
       if (id2 > 1) uf.Union(id1, id2);
       if (x > 0) {
-          int id3 = labels[base_down + (x - 1)];
-          if (id3 > 1) uf.Union(id1, id3);
+        int id3 = labels[base_down + (x - 1)];
+        if (id3 > 1) uf.Union(id1, id3);
       }
       if (x + 1 < width) {
-          int id4 = labels[base_down + (x + 1)];
-          if (id4 > 1) uf.Union(id1, id4);
+        int id4 = labels[base_down + (x + 1)];
+        if (id4 > 1) uf.Union(id1, id4);
       }
     }
   }
 
-  end = std::chrono::high_resolution_clock::now();
-  duration = end - start;
-  std::cout << "[OMP union in FindComponents: " << duration.count() << " ms]" << std::endl;
-
-  start = std::chrono::high_resolution_clock::now();
-
-  #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static)
   for (int i = 0; i < n; ++i) {
-      if (labels[i] > 1) {
-          labels[i] = uf.FindRoot(labels[i]);
-      }
+    if (labels[i] > 1) {
+      labels[i] = uf.FindRoot(labels[i]);
+    }
   }
 
-  end = std::chrono::high_resolution_clock::now();
-  duration = end - start;
-  std::cout << "[OMP MergeAreas in FindComponents: " << duration.count() << " ms]" << std::endl;
-
-  std::vector<Component> final_components = LabelsToComponents(labels, image);
+  std::vector<Component> final_components = LabelsToComponents(labels, image, num_components);
   return final_components;
 }
 
