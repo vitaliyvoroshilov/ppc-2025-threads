@@ -3,8 +3,10 @@
 #include <omp.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
+#include <iostream>
 #include <stack>
 #include <unordered_map>
 #include <utility>
@@ -168,7 +170,15 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsIn
 }
 
 std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOMP(Image& image) {
+  auto start = std::chrono::high_resolution_clock::now();
+
   Image tmp_image(image);
+
+  auto end = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double, std::milli> duration = end - start;
+  std::cout << "[OMP Image in FindComponents: " << duration.count() << " ms]" << std::endl;
+
+  start = std::chrono::high_resolution_clock::now();
 
   int num_threads = omp_get_max_threads();
 
@@ -205,6 +215,12 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
     }
   }
 
+  end = std::chrono::high_resolution_clock::now();
+  duration = end - start;
+  std::cout << "[OMP Distribution in FindComponents: " << duration.count() << " ms]" << std::endl;
+
+  start = std::chrono::high_resolution_clock::now();
+
 #pragma omp parallel
   {
     int thread_id = omp_get_thread_num();
@@ -213,12 +229,28 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
         FindComponentsInArea(tmp_image, start_y[thread_id], end_y[thread_id], index_offset[thread_id]);
   }
 
+  end = std::chrono::high_resolution_clock::now();
+  duration = end - start;
+  std::cout << "[OMP Parallel in FindComponents: " << duration.count() << " ms]" << std::endl;
+
+  start = std::chrono::high_resolution_clock::now();
+
   std::vector<Component> components;
   for (std::vector<Component>& vec : thread_components) {
     components.insert(components.end(), vec.begin(), vec.end());
   }
 
+  end = std::chrono::high_resolution_clock::now();
+  duration = end - start;
+  std::cout << "[OMP Insert in FindComponents: " << duration.count() << " ms]" << std::endl;
+
+  start = std::chrono::high_resolution_clock::now();
+
   MergeComponentsAcrossAreas(components, tmp_image, area_height, end_y);
+
+  end = std::chrono::high_resolution_clock::now();
+  duration = end - start;
+  std::cout << "[OMP MergeAreas in FindComponents: " << duration.count() << " ms]" << std::endl;
 
   return components;
 }
