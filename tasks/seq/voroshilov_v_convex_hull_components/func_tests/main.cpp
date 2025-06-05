@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -16,6 +17,17 @@
 using namespace voroshilov_v_convex_hull_components_seq;
 
 namespace {
+
+void SortHulls(std::vector<Hull>& hulls) {
+  std::ranges::sort(hulls, [](const Hull& a, const Hull& b) {
+    const Pixel& left_top_a = *std::ranges::min_element(
+        a, [](const Pixel& p1, const Pixel& p2) { return p1.x < p2.x || (p1.x == p2.x && p1.y < p2.y); });
+    const Pixel& left_top_b = *std::ranges::min_element(
+        b, [](const Pixel& p1, const Pixel& p2) { return p1.x < p2.x || (p1.x == p2.x && p1.y < p2.y); });
+
+    return left_top_a.x < left_top_b.x || (left_top_a.x == left_top_b.x && left_top_a.y < left_top_b.y);
+  });
+}
 
 bool ValidationTest(int height, int width, std::vector<int>& pixels) {
   int* p_height = &height;
@@ -226,6 +238,9 @@ TEST(voroshilov_v_convex_hull_components_seq, simpleTest3Components) {
   hull3.pixels = {{4, 0}, {2, 2}, {3, 3}, {4, 1}};
   expect_hulls.push_back(hull3);
 
+  SortHulls(result_hulls);
+  SortHulls(expect_hulls);
+
   ASSERT_EQ(result_hulls.size(), expect_hulls.size());
 
   EXPECT_EQ(result_hulls, expect_hulls);
@@ -271,6 +286,9 @@ TEST(voroshilov_v_convex_hull_components_seq, simpleTest5Components) {
   Hull hull5;
   hull5.pixels = {{9, 4}, {8, 5}, {10, 5}};
   expect_hulls.push_back(hull5);
+
+  SortHulls(result_hulls);
+  SortHulls(expect_hulls);
 
   ASSERT_EQ(result_hulls.size(), expect_hulls.size());
 
