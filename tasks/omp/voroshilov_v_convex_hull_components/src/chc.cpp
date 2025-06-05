@@ -236,9 +236,19 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
   start = std::chrono::high_resolution_clock::now();
 
   std::vector<Component> components;
+  size_t totalCount = 0;
+  for (auto& v : thread_components) {
+    totalCount += v.size();
+  }
+  components.reserve(totalCount);
+  for (auto& v : thread_components) {
+    components.insert(components.end(), v.begin(), v.end());
+  }
+
+  /*std::vector<Component> components;
   for (std::vector<Component>& vec : thread_components) {
     components.insert(components.end(), vec.begin(), vec.end());
-  }
+  }*/
 
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
