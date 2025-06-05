@@ -260,7 +260,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
 
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
-  std::cout << "[OMP MergeAreas in FindComponents: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[OMP MergeArea in FindComponents: " << duration.count() << " ms]" << std::endl;
 
   return components;
 }
