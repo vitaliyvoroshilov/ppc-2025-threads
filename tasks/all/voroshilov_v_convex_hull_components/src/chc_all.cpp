@@ -2,24 +2,11 @@
 
 #include <algorithm>
 #include <boost/mpi/communicator.hpp>
+#include <chrono>
+#include <iostream>
 #include <vector>
 
 #include "../include/chc.hpp"
-
-
-
-
-
-
-
-#include <chrono>
-#include <iostream>
-
-
-
-
-
-
 
 using namespace voroshilov_v_convex_hull_components_all;
 
@@ -62,7 +49,7 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::RunImpl() {
 
   auto end = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-  std::cout << "[" << world_.rank()  << " Image and FindComponentsOMP: " << duration.count() << "] \n";
+  std::cout << "[" << world_.rank() << " Image and FindComponentsOMP: " << duration.count() << "] \n";
 
   start = std::chrono::high_resolution_clock::now();
 
@@ -74,7 +61,7 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::RunImpl() {
 
   end = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-  std::cout << "[" << world_.rank()  << " QuickHullAll: " << duration.count() << "] \n";
+  std::cout << "[" << world_.rank() << " QuickHullAll: " << duration.count() << "] \n";
 
   return true;
 }
