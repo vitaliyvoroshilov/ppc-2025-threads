@@ -9,6 +9,8 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <chrono>
+#include <iostream>
 
 using namespace voroshilov_v_convex_hull_components_omp;
 
@@ -221,6 +223,8 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
   int width = image.width;
   int n = height * width;
 
+  auto start = std::chrono::high_resolution_clock::now();
+
   std::vector<int> labels(n, 0);
   int num_threads = omp_get_max_threads();
 
@@ -253,6 +257,11 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
     }
   }
 
+  auto end = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  std::cout << "[OMP Distribution: " << duration.count() << " ms] \n";
+  start = std::chrono::high_resolution_clock::now();
+
   int num_components = 0;
 
 #pragma omp parallel
@@ -263,9 +272,24 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
         FindComponentsInArea(labels, image, start_y[thread_id], end_y[thread_id], index_offset[thread_id]);
   }
 
+  end = std::chrono::high_resolution_clock::now();
+  duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  std::cout << "[OMP Parallel: " << duration.count() << " ms] \n";
+  start = std::chrono::high_resolution_clock::now();
+
   MergeLabels(labels, image, num_threads, end_y);
 
+  auto end = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  std::cout << "[OMP MergeLabels: " << duration.count() << " ms] \n";
+  start = std::chrono::high_resolution_clock::now();
+
   std::vector<Component> final_components = LabelsToComponents(labels, image, num_components);
+
+  auto end = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  std::cout << "[OMP LabelsToComponents: " << duration.count() << " ms] \n";
+
   return final_components;
 }
 

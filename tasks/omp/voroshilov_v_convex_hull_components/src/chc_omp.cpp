@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <vector>
+#include <chrono>
+#include <iostream>
 
 #include "../include/chc.hpp"
 
@@ -32,11 +34,28 @@ bool voroshilov_v_convex_hull_components_omp::ChcTaskOMP::PreProcessingImpl() {
 }
 
 bool voroshilov_v_convex_hull_components_omp::ChcTaskOMP::RunImpl() {
+
+  auto start = std::chrono::high_resolution_clock::now();
+
   Image image(height_in_, width_in_, pixels_in_);
+
+  auto end = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  std::cout << "[OMP Image: " << duration.count() << " ms] \n";
+  start = std::chrono::high_resolution_clock::now();
 
   std::vector<Component> components = FindComponentsOMP(image);
 
+  end = std::chrono::high_resolution_clock::now();
+  duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  std::cout << "[OMP FindComponents: " << duration.count() << " ms] \n";
+  start = std::chrono::high_resolution_clock::now();
+
   hulls_out_ = QuickHullAllOMP(components);
+
+  end = std::chrono::high_resolution_clock::now();
+  duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  std::cout << "[OMP QuickHullAll: " << duration.count() << " ms] \n";
 
   return true;
 }

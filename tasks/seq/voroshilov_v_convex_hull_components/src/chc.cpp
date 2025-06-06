@@ -7,6 +7,8 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <chrono>
+#include <iostream>
 
 using namespace voroshilov_v_convex_hull_components_seq;
 
@@ -109,6 +111,8 @@ std::vector<Component> voroshilov_v_convex_hull_components_seq::FindComponents(I
 
   std::vector<int> labels(n, 0);
 
+  auto start = std::chrono::high_resolution_clock::now();
+
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
       int index = (y * width) + x;
@@ -119,7 +123,16 @@ std::vector<Component> voroshilov_v_convex_hull_components_seq::FindComponents(I
     }
   }
 
+  auto end = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  std::cout << "[SEQ DFC: " << duration.count() << " ms] \n";
+  start = std::chrono::high_resolution_clock::now();
+
   std::vector<Component> final_components = LabelsToComponents(labels, image, num_components);
+
+  end = std::chrono::high_resolution_clock::now();
+  duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  std::cout << "[SEQ LabelsToComponents: " << duration.count() << " ms] \n";
 
   return final_components;
 }
