@@ -102,8 +102,9 @@ void voroshilov_v_convex_hull_components_seq::DepthComponentSearch(std::vector<i
 }
 
 std::vector<Component> voroshilov_v_convex_hull_components_seq::FindComponents(Image& image) {
-  int height = image.height;
-  int width = image.width;
+  Image tmp_image(image);
+  int height = tmp_image.height;
+  int width = tmp_image.width;
   int n = height * width;
   int num_components = 0;
 
