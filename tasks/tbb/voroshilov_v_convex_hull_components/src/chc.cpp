@@ -41,11 +41,13 @@ Pixel& Image::GetPixel(int y, int x) { return pixels[(y * width) + x]; }
 
 LineSegment::LineSegment(Pixel& a_param, Pixel& b_param) : a(a_param), b(b_param) {}
 
-int UnionFind::FindRoot(int x) {
-  if (roots.find(x) == roots.end()) {
-    roots[x] = x;
-    ranks[x] = 1;
+UnionFind::UnionFind(int n) : roots(n), ranks(n, 1) {
+  for (int i = 0; i < n; i++) {
+    roots[i] = i;
   }
+}
+
+int UnionFind::FindRoot(int x) {
   if (roots[x] != x) {
     roots[x] = FindRoot(roots[x]);
   }
@@ -67,120 +69,163 @@ void UnionFind::Union(int x, int y) {
   }
 }
 
-void voroshilov_v_convex_hull_components_tbb::CheckBoundaryPixels(UnionFind* union_find, Image& image, int y, int x) {
-  Pixel p1 = image.GetPixel(y, x);
-
-  Pixel p2 = image.GetPixel(y + 1, x);
-  if (p1.value > 1 && p2.value > 1) {
-    union_find->Union(p1.value, p2.value);
-  }
-
-  if (x > 0) {
-    Pixel p3 = image.GetPixel(y + 1, x - 1);
-    if (p1.value > 1 && p3.value > 1) {
-      union_find->Union(p1.value, p3.value);
-    }
-  }
-  if (x < image.width - 1) {
-    Pixel p4 = image.GetPixel(y + 1, x + 1);
-    if (p1.value > 1 && p4.value > 1) {
-      union_find->Union(p1.value, p4.value);
-    }
-  }
-}
-
-void voroshilov_v_convex_hull_components_tbb::MergeComponentsAcrossAreas(std::vector<Component>& components,
-                                                                         Image& image, int area_height,
-                                                                         std::vector<int>& end_y) {
-  UnionFind union_find;
-
-  int width = image.width;
+std::vector<Component> voroshilov_v_convex_hull_components_tbb::LabelsToComponents(std::vector<int>& labels,
+                                                                                   Image& image, int num_components) {
   int height = image.height;
+  int width = image.width;
+  int n = height * width;
 
-  for (int endy : end_y) {
-    int y = endy - 1;
-    if (y != height - 1) {
-      for (int x = 0; x < width; x++) {
-        CheckBoundaryPixels(&union_find, image, y, x);
-      }
+  std::unordered_map<int, std::vector<int>> groups;
+  groups.reserve(num_components);
+
+  for (int i = 0; i < n; ++i) {
+    int lab = labels[i];
+    if (lab > 1) {
+      groups[lab].push_back(i);
     }
   }
 
-  std::unordered_map<int, Component> merged_components;
-  for (Component& component : components) {
-    int new_id = union_find.FindRoot(component[0].value);
-    if (merged_components.find(new_id) == merged_components.end()) {
-      merged_components[new_id] = Component();
-    }
-    merged_components[new_id].insert(merged_components[new_id].end(), component.begin(), component.end());
-  }
-
-  components.clear();
-  for (auto& entry : merged_components) {
-    components.push_back(entry.second);
-  }
-}
-
-Component voroshilov_v_convex_hull_components_tbb::DepthComponentSearchInArea(Pixel start_pixel, Image* tmp_image,
-                                                                              int index, int start_y, int end_y) {
-  const int step_y[8] = {1, 1, 1, 0, 0, -1, -1, -1};  // Offsets by Y (up, stand, down)
-  const int step_x[8] = {-1, 0, 1, -1, 1, -1, 0, 1};  // Offsets by X (left, stand, right)
-  std::stack<Pixel> stack;
-  std::vector<Pixel> component_pixels;
-  stack.push(start_pixel);
-  tmp_image->GetPixel(start_pixel.y, start_pixel.x).value = index;                // Mark start pixel as visited
-  component_pixels.push_back(tmp_image->GetPixel(start_pixel.y, start_pixel.x));  // Add start pixel to component
-
-  while (!stack.empty()) {
-    Pixel current_pixel = stack.top();
-    stack.pop();
-    for (int i = 0; i < 8; i++) {
-      int next_y = current_pixel.y + step_y[i];
-      int next_x = current_pixel.x + step_x[i];
-      if (next_y >= start_y && next_y < end_y && next_x >= 0 && next_x < tmp_image->width &&
-          tmp_image->GetPixel(next_y, next_x) == 1) {
-        stack.push(tmp_image->GetPixel(next_y, next_x));
-        tmp_image->GetPixel(next_y, next_x).value = index;                // Mark neighbour pixel as visited
-        component_pixels.push_back(tmp_image->GetPixel(next_y, next_x));  // Add neighbour pixel to component
-      }
-    }
-  }
-
-  Component component(component_pixels);
-
-  return component;
-}
-
-std::vector<Component> voroshilov_v_convex_hull_components_tbb::FindComponentsInArea(Image& tmp_image, int start_y,
-                                                                                     int end_y, int index_offset) {
   std::vector<Component> components;
-  int index = index_offset;  // unique index in this area
+  components.reserve(groups.size());
 
-  for (int y = start_y; y < end_y; y++) {
-    for (int x = 0; x < tmp_image.width; x++) {
-      if (tmp_image.GetPixel(y, x) == 1) {
-        Component component = DepthComponentSearchInArea(tmp_image.GetPixel(y, x), &tmp_image, index, start_y, end_y);
-        components.push_back(component);
-        index++;
-      }
+  for (auto& kv : groups) {
+    int root_label = kv.first;
+    const std::vector<int>& idxs = kv.second;
+    Component comp;
+    comp.reserve(idxs.size());
+    for (int i : idxs) {
+      int y = i / width;
+      int x = i % width;
+      comp.emplace_back(y, x, root_label);
     }
+    components.push_back(std::move(comp));
   }
-
-  if (components.empty()) {
-    return {};
-  }
-
   return components;
 }
 
+void voroshilov_v_convex_hull_components_tbb::UnionLabels(UnionFind& uf, std::vector<int>& labels, Image& image,
+                                                          int num_threads, int end_y) {
+  int height = image.height;
+  int width = image.width;
+
+  int y = end_y - 1;
+  if (y < 0 || y >= height - 1) {
+    return;
+  }
+  int base = y * width;
+  int base_down = (y + 1) * width;
+  for (int x = 0; x < width; ++x) {
+    int id1 = labels[base + x];
+    if (id1 <= 1) {
+      continue;
+    }
+    int id2 = labels[base_down + x];
+    if (id2 > 1) {
+      uf.Union(id1, id2);
+    }
+    if (x > 0) {
+      int id3 = labels[base_down + (x - 1)];
+      if (id3 > 1) {
+        uf.Union(id1, id3);
+      }
+    }
+    if (x + 1 < width) {
+      int id4 = labels[base_down + (x + 1)];
+      if (id4 > 1) {
+        uf.Union(id1, id4);
+      }
+    }
+  }
+}
+
+void voroshilov_v_convex_hull_components_tbb::MergeLabels(std::vector<int>& labels, Image& image, int num_threads,
+                                                          std::vector<int>& end_y) {
+  int height = image.height;
+  int width = image.width;
+  int n = height * width;
+
+  int max_raw_label = 0;
+  for (int v : labels) {
+    max_raw_label = std::max(v, max_raw_label);
+  }
+  UnionFind uf(max_raw_label + 1);
+
+  for (int i = 0; i < num_threads; i++) {
+    UnionLabels(uf, labels, image, num_threads, end_y[i]);
+  }
+
+  oneapi::tbb::task_arena arena(num_threads);
+
+  arena.execute([&] {
+    oneapi::tbb::parallel_for(0, n, [&](int i) {
+      if (labels[i] > 1) {
+        labels[i] = uf.FindRoot(labels[i]);
+      }
+    });
+  });
+}
+
+void voroshilov_v_convex_hull_components_tbb::DepthComponentSearchInArea(std::vector<int>& labels, Image& image, int sy,
+                                                                         int sx, int index, int start_y, int end_y) {
+  const int step_y[8] = {1, 1, 1, 0, 0, -1, -1, -1};  // Offsets by Y (up, stand, down)
+  const int step_x[8] = {-1, 0, 1, -1, 1, -1, 0, 1};  // Offsets by X (left, stand, right)
+
+  std::stack<int> stack;
+  int width = image.width;
+  int start_index = (sy * width) + sx;
+  labels[start_index] = index;
+  stack.push(start_index);
+
+  while (!stack.empty()) {
+    int current_index = stack.top();
+    stack.pop();
+    int cy = current_index / width;
+    int cx = current_index % width;
+    for (int i = 0; i < 8; i++) {
+      int ny = cy + step_y[i];
+      int nx = cx + step_x[i];
+      if (ny >= end_y || ny < start_y || nx >= width || nx < 0) {
+        continue;
+      }
+      int next_index = (ny * width) + nx;
+      if (image.pixels[next_index] == 1 && labels[next_index] == 0) {
+        labels[next_index] = index;
+        stack.push(next_index);
+      }
+    }
+  }
+}
+
+int voroshilov_v_convex_hull_components_tbb::FindComponentsInArea(std::vector<int>& labels, Image& image, int start_y,
+                                                                  int end_y, int index_offset) {
+  int width = image.width;
+  int offset = index_offset;  // unique index in this area
+  int num_components = 0;
+
+  for (int y = start_y; y < end_y; y++) {
+    for (int x = 0; x < width; x++) {
+      int index = (y * width) + x;
+      if (image.pixels[index] == 1 && labels[index] == 0) {
+        DepthComponentSearchInArea(labels, image, y, x, offset, start_y, end_y);
+        num_components++;
+        offset++;
+      }
+    }
+  }
+
+  return num_components;
+}
+
 std::vector<Component> voroshilov_v_convex_hull_components_tbb::FindComponentsTBB(Image& image) {
-  Image tmp_image(image);
+  int height = image.height;
+  int width = image.width;
+  int n = height * width;
+
+  std::vector<int> labels(n, 0);
 
   int num_threads = ppc::util::GetPPCNumThreads();
 
   std::vector<std::vector<Component>> thread_components(num_threads);
-
-  int height = tmp_image.height;
 
   int area_height = height / num_threads;
   int remainder = height % num_threads;
@@ -211,23 +256,21 @@ std::vector<Component> voroshilov_v_convex_hull_components_tbb::FindComponentsTB
     }
   }
 
+  int num_components = 0;
+
   oneapi::tbb::task_arena arena(num_threads);
 
   arena.execute([&] {
     oneapi::tbb::parallel_for(0, num_threads, [&](int thread_id) {
-      thread_components[thread_id] =
-          FindComponentsInArea(tmp_image, start_y[thread_id], end_y[thread_id], index_offset[thread_id]);
+      num_components +=
+          FindComponentsInArea(labels, image, start_y[thread_id], end_y[thread_id], index_offset[thread_id]);
     });
   });
 
-  std::vector<Component> components;
-  for (std::vector<Component>& vec : thread_components) {
-    components.insert(components.end(), vec.begin(), vec.end());
-  }
+  MergeLabels(labels, image, num_threads, end_y);
 
-  MergeComponentsAcrossAreas(components, tmp_image, area_height, end_y);
-
-  return components;
+  std::vector<Component> final_components = LabelsToComponents(labels, image, num_components);
+  return final_components;
 }
 
 int voroshilov_v_convex_hull_components_tbb::CheckRotation(Pixel& first, Pixel& second, Pixel& third) {

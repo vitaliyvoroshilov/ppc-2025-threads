@@ -4,6 +4,8 @@
 #include <cmath>
 #include <cstddef>
 #include <stack>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 using namespace voroshilov_v_convex_hull_components_seq;
@@ -33,51 +35,93 @@ LineSegment::LineSegment(Pixel& a_param, Pixel& b_param) : a(a_param), b(b_param
 
 bool Hull::operator==(const Hull& other) const { return pixels == other.pixels; }
 
-Component voroshilov_v_convex_hull_components_seq::DepthComponentSearch(Pixel& start_pixel, Image* tmp_image,
-                                                                        int index) {
-  const int step_y[8] = {1, 1, 1, 0, 0, -1, -1, -1};  // Offsets by Y (up, stand, down)
-  const int step_x[8] = {-1, 0, 1, -1, 1, -1, 0, 1};  // Offsets by X (left, stand, right)
-  std::stack<Pixel> stack;
-  Component component;
-  stack.push(start_pixel);
-  tmp_image->GetPixel(start_pixel.y, start_pixel.x).value = index;        // Mark start pixel as visited
-  component.AddPixel(tmp_image->GetPixel(start_pixel.y, start_pixel.x));  // Add start pixel to component
+std::vector<Component> voroshilov_v_convex_hull_components_seq::LabelsToComponents(std::vector<int>& labels,
+                                                                                   Image& image, int num_components) {
+  int height = image.height;
+  int width = image.width;
+  int n = height * width;
 
-  while (!stack.empty()) {
-    Pixel current_pixel = stack.top();
-    stack.pop();
-    for (int i = 0; i < 8; i++) {
-      int next_y = current_pixel.y + step_y[i];
-      int next_x = current_pixel.x + step_x[i];
-      if (next_y >= 0 && next_y < tmp_image->height && next_x >= 0 && next_x < tmp_image->width &&
-          tmp_image->GetPixel(next_y, next_x) == 1) {
-        stack.push(tmp_image->GetPixel(next_y, next_x));
-        tmp_image->GetPixel(next_y, next_x).value = index;        // Mark neighbour pixel as visited
-        component.AddPixel(tmp_image->GetPixel(next_y, next_x));  // Add neighbour pixel to component
-      }
+  std::unordered_map<int, std::vector<int>> groups;
+  groups.reserve(num_components);
+
+  for (int i = 0; i < n; ++i) {
+    int lab = labels[i];
+    if (lab > 1) {
+      groups[lab].push_back(i);
     }
   }
 
-  return component;
+  std::vector<Component> components;
+  components.reserve(groups.size());
+
+  for (auto& kv : groups) {
+    int root_label = kv.first;
+    const std::vector<int>& idxs = kv.second;
+    Component comp;
+    comp.pixels.reserve(idxs.size());
+    for (int i : idxs) {
+      int y = i / width;
+      int x = i % width;
+      comp.pixels.emplace_back(y, x, root_label);
+    }
+    components.push_back(std::move(comp));
+  }
+  return components;
+}
+
+void voroshilov_v_convex_hull_components_seq::DepthComponentSearch(std::vector<int>& labels, Image& image, int sy,
+                                                                   int sx, int index) {
+  const int step_y[8] = {1, 1, 1, 0, 0, -1, -1, -1};  // Offsets by Y (up, stand, down)
+  const int step_x[8] = {-1, 0, 1, -1, 1, -1, 0, 1};  // Offsets by X (left, stand, right)
+
+  std::stack<int> stack;
+  int height = image.height;
+  int width = image.width;
+  int start_index = (sy * width) + sx;
+  labels[start_index] = index;
+  stack.push(start_index);
+
+  while (!stack.empty()) {
+    int current_index = stack.top();
+    stack.pop();
+    int cy = current_index / width;
+    int cx = current_index % width;
+    for (int i = 0; i < 8; i++) {
+      int ny = cy + step_y[i];
+      int nx = cx + step_x[i];
+      if (ny < 0 || ny >= height || nx < 0 || nx >= width) {
+        continue;
+      }
+      int next_index = (ny * width) + nx;
+      if (image.pixels[next_index] == 1 && labels[next_index] == 0) {
+        labels[next_index] = index;
+        stack.push(next_index);
+      }
+    }
+  }
 }
 
 std::vector<Component> voroshilov_v_convex_hull_components_seq::FindComponents(Image& image) {
-  Image tmp_image(image);
-  std::vector<Component> components;
-  int count = 0;
-  for (int y = 0; y < tmp_image.height; y++) {
-    for (int x = 0; x < tmp_image.width; x++) {
-      if (tmp_image.GetPixel(y, x) == 1) {
-        Component component = DepthComponentSearch(tmp_image.GetPixel(y, x), &tmp_image, count + 2);
-        components.push_back(component);
-        count++;
+  int height = image.height;
+  int width = image.width;
+  int n = height * width;
+  int num_components = 0;
+
+  std::vector<int> labels(n, 0);
+
+  for (int y = 0; y < height; y++) {
+    for (int x = 0; x < width; x++) {
+      int index = (y * width) + x;
+      if (image.pixels[index] == 1 && labels[index] == 0) {
+        DepthComponentSearch(labels, image, y, x, num_components + 2);
+        num_components++;
       }
     }
   }
-  if (components.empty()) {
-    return {};
-  }
-  return components;
+
+  std::vector<Component> final_components = LabelsToComponents(labels, image, num_components);
+
+  return final_components;
 }
 
 int voroshilov_v_convex_hull_components_seq::CheckRotation(Pixel& first, Pixel& second, Pixel& third) {

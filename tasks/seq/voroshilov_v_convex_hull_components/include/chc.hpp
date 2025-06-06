@@ -53,7 +53,9 @@ struct Hull {
   bool operator==(const Hull& other) const;
 };
 
-Component DepthComponentSearch(Pixel& start_pixel, Image* tmp_image, int index);
+std::vector<Component> LabelsToComponents(std::vector<int>& labels, Image& image, int num_components);
+
+void DepthComponentSearch(std::vector<int>& labels, Image& image, int sy, int sx, int index);
 
 std::vector<Component> FindComponents(Image& image);
 
