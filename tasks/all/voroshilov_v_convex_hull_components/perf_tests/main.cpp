@@ -161,7 +161,7 @@ void CheckResultsWithOpencv(int height, int width, std::vector<int>& pixels, std
 TEST(voroshilov_v_convex_hull_components_all, chc_pipeline_run) {
   int height = 10'000;
   int width = 10'000;
-  std::vector<int> pixels = GenerateRectanglesComponents(width, height, 1000, 100, 500);
+  std::vector<int> pixels = GenerateRectanglesComponents(width, height, 10'000, 25, 50);
 
   int* p_height = &height;
   int* p_width = &width;
@@ -210,7 +210,7 @@ TEST(voroshilov_v_convex_hull_components_all, chc_pipeline_run) {
 TEST(voroshilov_v_convex_hull_components_all, chc_task_run) {
   int height = 10'000;
   int width = 10'000;
-  std::vector<int> pixels = GenerateRectanglesComponents(width, height, 1000, 100, 500);
+  std::vector<int> pixels = GenerateRectanglesComponents(width, height, 10'000, 25, 50);
 
   int* p_height = &height;
   int* p_width = &width;
