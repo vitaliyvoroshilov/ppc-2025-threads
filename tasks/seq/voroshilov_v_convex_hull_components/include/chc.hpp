@@ -53,6 +53,17 @@ struct Hull {
   bool operator==(const Hull& other) const;
 };
 
+class UnionFind {
+ public:
+  std::vector<int> roots;
+  std::vector<int> ranks;
+
+  UnionFind() = default;
+  UnionFind(int n);
+  int FindRoot(int x);
+  void Union(int x, int y);
+};
+
 std::vector<Component> LabelsToComponents(std::vector<int>& labels, Image& image, int num_components);
 
 void DepthComponentSearch(std::vector<int>& labels, Image& image, int sy, int sx, int index);

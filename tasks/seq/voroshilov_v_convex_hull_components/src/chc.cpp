@@ -35,6 +35,34 @@ LineSegment::LineSegment(Pixel& a_param, Pixel& b_param) : a(a_param), b(b_param
 
 bool Hull::operator==(const Hull& other) const { return pixels == other.pixels; }
 
+UnionFind::UnionFind(int n) : roots(n), ranks(n, 1) {
+  for (int i = 0; i < n; i++) {
+    roots[i] = i;
+  }
+}
+
+int UnionFind::FindRoot(int x) {
+  if (roots[x] != x) {
+    roots[x] = FindRoot(roots[x]);
+  }
+  return roots[x];
+}
+
+void UnionFind::Union(int x, int y) {
+  int root_x = FindRoot(x);
+  int root_y = FindRoot(y);
+  if (root_x != root_y) {
+    if (ranks[root_x] > ranks[root_y]) {
+      roots[root_y] = root_x;
+    } else if (ranks[root_x] < ranks[root_y]) {
+      roots[root_x] = root_y;
+    } else {
+      roots[root_y] = root_x;
+      ranks[root_x]++;
+    }
+  }
+}
+
 std::vector<Component> voroshilov_v_convex_hull_components_seq::LabelsToComponents(std::vector<int>& labels,
                                                                                    Image& image, int num_components) {
   int height = image.height;
@@ -105,22 +133,60 @@ std::vector<Component> voroshilov_v_convex_hull_components_seq::FindComponents(I
   int height = image.height;
   int width = image.width;
   int n = height * width;
-  int num_components = 0;
 
+  // 1. Создаём массив меток и UnionFind по N пикселям.
   std::vector<int> labels(n, 0);
+  UnionFind uf(n);
 
-  for (int y = 0; y < height; y++) {
-    for (int x = 0; x < width; x++) {
-      int index = (y * width) + x;
-      if (image.pixels[index] == 1 && labels[index] == 0) {
-        DepthComponentSearch(labels, image, y, x, num_components + 2);
-        num_components++;
+  // 2. Первый проход: назначаем временные метки = i+1 и union с уже пронумерованными «соседями сверху/слева».
+  for (int i = 0; i < n; ++i) {
+    if (image.pixels[i] == 0) continue;          // фон (0) сразу пропускаем
+    labels[i] = i + 1;                           // временная уникальная метка
+
+    int y = i / width;
+    int x = i % width;
+    // 4-соседи, уже определённые ранее:
+    //   (y, x-1), (y-1, x), (y-1, x-1), (y-1, x+1)
+    if (x > 0 && image.pixels[i - 1] == 1) {
+      uf.Union(i, i - 1);
+    }
+    if (y > 0) {
+      int up = i - width;
+      if (image.pixels[up] == 1) {
+        uf.Union(i, up);
+      }
+      if (x > 0 && image.pixels[up - 1] == 1) {
+        uf.Union(i, up - 1);
+      }
+      if (x + 1 < width && image.pixels[up + 1] == 1) {
+        uf.Union(i, up + 1);
       }
     }
   }
 
-  std::vector<Component> final_components = LabelsToComponents(labels, image, num_components);
+  // 3. Второй проход: переписываем каждую временную метку на её корень, а затем compact-ренумеруем.
+  //    Здесь собираем map<корень→последовательный номер 1..K>.
+  std::unordered_map<int, int> remap;
+  remap.reserve(n / 8);
+  int nextLabel = 0;
 
+  for (int i = 0; i < n; ++i) {
+    if (image.pixels[i] == 0) {
+      labels[i] = 0;   // фон
+      continue;
+    }
+    int root = uf.FindRoot(i);
+    auto it = remap.find(root);
+    if (it == remap.end()) {
+      ++nextLabel;
+      remap[root] = nextLabel;
+      it = remap.find(root);
+    }
+    labels[i] = it->second;
+  }
+
+  // 4. Собираем компоненты из итогового масива labels[ ] (метки в диапазоне [1..nextLabel]).
+  std::vector<Component> final_components = LabelsToComponents(labels, image, nextLabel + 1);
   return final_components;
 }
 

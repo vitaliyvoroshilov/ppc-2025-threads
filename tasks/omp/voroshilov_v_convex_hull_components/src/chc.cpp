@@ -10,6 +10,16 @@
 #include <utility>
 #include <vector>
 
+
+
+
+
+#include <chrono>
+#include <iostream>
+
+
+
+
 using namespace voroshilov_v_convex_hull_components_omp;
 
 Pixel::Pixel(int y_param, int x_param) : y(y_param), x(x_param), value(0) {}
@@ -63,200 +73,329 @@ void UnionFind::Union(int x, int y) {
   }
 }
 
-std::vector<Component> voroshilov_v_convex_hull_components_omp::LabelsToComponents(std::vector<int>& labels,
-                                                                                   Image& image, int num_components) {
-  int height = image.height;
-  int width = image.width;
-  int n = height * width;
+std::vector<Component> voroshilov_v_convex_hull_components_omp::LabelsToComponents(
+    std::vector<int>& labels, Image& image, int num_components) 
+{
+    const int height = image.height;
+    const int width  = image.width;
+    const int N      = height * width;
 
-  std::unordered_map<int, std::vector<int>> groups;
-  groups.reserve(num_components);
+    int T = omp_get_max_threads();
+    if (T < 1) T = 1;
 
-  for (int i = 0; i < n; ++i) {
-    int lab = labels[i];
-    if (lab > 1) {
-      groups[lab].push_back(i);
-    }
-  }
+    // 1) Выделяем локальные гистограммы: localCountsThr[t][L]
+    std::vector<std::vector<int>> localCountsThr(T, std::vector<int>(num_components, 0));
 
-  std::vector<Component> components;
-  components.reserve(groups.size());
+    #pragma omp parallel
+    {
+      int t = omp_get_thread_num();
+      int chunk = (N + T - 1) / T;         // грубое равное разбиение по i
+      int i0 = t * chunk;
+      int i1 = std::min(i0 + chunk, N);
+      auto & locCounts = localCountsThr[t];
 
-  for (auto& kv : groups) {
-    int root_label = kv.first;
-    const std::vector<int>& idxs = kv.second;
-    Component comp;
-    comp.reserve(idxs.size());
-    for (int i : idxs) {
-      int y = i / width;
-      int x = i % width;
-      comp.emplace_back(y, x, root_label);
-    }
-    components.push_back(std::move(comp));
-  }
-  return components;
-}
-
-void voroshilov_v_convex_hull_components_omp::UnionLabels(UnionFind& uf, std::vector<int>& labels, Image& image,
-                                                          int num_threads, int end_y) {
-  int height = image.height;
-  int width = image.width;
-
-  int y = end_y - 1;
-  if (y < 0 || y >= height - 1) {
-    return;
-  }
-  int base = y * width;
-  int base_down = (y + 1) * width;
-  for (int x = 0; x < width; x++) {
-    int id1 = labels[base + x];
-    if (id1 <= 1) {
-      continue;
-    }
-    int id2 = labels[base_down + x];
-    if (id2 > 1) {
-      uf.Union(id1, id2);
-    }
-    if (x > 0) {
-      int id3 = labels[base_down + (x - 1)];
-      if (id3 > 1) {
-        uf.Union(id1, id3);
+      for (int i = i0; i < i1; ++i) {
+        int lab = labels[i];
+        if (lab > 1) {
+          locCounts[lab]++;
+        }
       }
     }
-    if (x + 1 < width) {
-      int id4 = labels[base_down + (x + 1)];
-      if (id4 > 1) {
-        uf.Union(id1, id4);
+
+    // 2) Собираем global counts и строим префикс-сумму → startPos[L]
+    std::vector<int> counts(num_components, 0);
+    for (int L = 0; L < num_components; ++L) {
+      int s = 0;
+      for (int t = 0; t < T; ++t) {
+        s += localCountsThr[t][L];
+      }
+      counts[L] = s;
+    }
+    // префикс-сумма по counts
+    std::vector<int> startPos(num_components, 0);
+    int total = 0;
+    for (int L = 0; L < num_components; ++L) {
+      startPos[L] = total;
+      total      += counts[L];
+    }
+
+    // 3) Подготовим precomputedOffsets[t][L], чтобы каждый поток знал,
+    //    куда писать свои элементы allIdx без гонок
+    // precomputedOffsets[t][L] = startPos[L] + sum_{u=0..t-1} localCountsThr[u][L]
+    std::vector<std::vector<int>> precomputedOffsets(T, std::vector<int>(num_components, 0));
+    for (int L = 0; L < num_components; ++L) {
+      int running = startPos[L];
+      for (int t = 0; t < T; ++t) {
+        precomputedOffsets[t][L] = running;
+        running += localCountsThr[t][L];
       }
     }
-  }
-}
 
-void voroshilov_v_convex_hull_components_omp::MergeLabels(std::vector<int>& labels, Image& image, int num_threads,
-                                                          std::vector<int>& end_y) {
-  int height = image.height;
-  int width = image.width;
-  int n = height * width;
+    // 4) Выделяем плоский буфер allIdx длины total
+    std::vector<int> allIdx(total);
 
-  int max_raw_label = 0;
-  for (int v : labels) {
-    max_raw_label = std::max(v, max_raw_label);
-  }
-  UnionFind uf(max_raw_label + 1);
+    // 5) Второй параллельный проход: каждый поток пишет свою часть i→allIdx
+    //    Используем локальный localWrittenThr[t][L], чтобы знать, сколько мы уже записали
+    std::vector<std::vector<int>> localWrittenThr(T, std::vector<int>(num_components, 0));
 
-  for (int i = 0; i < num_threads; i++) {
-    UnionLabels(uf, labels, image, num_threads, end_y[i]);
-  }
+    #pragma omp parallel
+    {
+      int t = omp_get_thread_num();
+      int chunk = (N + T - 1) / T;
+      int i0 = t * chunk;
+      int i1 = std::min(i0 + chunk, N);
+      auto & written = localWrittenThr[t];
+      auto & offsets = precomputedOffsets[t];
 
-#pragma omp parallel for schedule(static)
-  for (int i = 0; i < n; i++) {
-    if (labels[i] > 1) {
-      labels[i] = uf.FindRoot(labels[i]);
-    }
-  }
-}
-
-void voroshilov_v_convex_hull_components_omp::DepthComponentSearchInArea(std::vector<int>& labels, Image& image, int sy,
-                                                                         int sx, int index, int start_y, int end_y) {
-  const int step_y[8] = {1, 1, 1, 0, 0, -1, -1, -1};  // Offsets by Y (up, stand, down)
-  const int step_x[8] = {-1, 0, 1, -1, 1, -1, 0, 1};  // Offsets by X (left, stand, right)
-
-  std::stack<int> stack;
-  int width = image.width;
-  int start_index = (sy * width) + sx;
-  labels[start_index] = index;
-  stack.push(start_index);
-
-  while (!stack.empty()) {
-    int current_index = stack.top();
-    stack.pop();
-    int cy = current_index / width;
-    int cx = current_index % width;
-    for (int i = 0; i < 8; i++) {
-      int ny = cy + step_y[i];
-      int nx = cx + step_x[i];
-      if (ny >= end_y || ny < start_y || nx >= width || nx < 0) {
-        continue;
-      }
-      int next_index = (ny * width) + nx;
-      if (image.pixels[next_index] == 1 && labels[next_index] == 0) {
-        labels[next_index] = index;
-        stack.push(next_index);
+      for (int i = i0; i < i1; ++i) {
+        int lab = labels[i];
+        if (lab > 1) {
+          int pos = offsets[lab] + written[lab]++;
+          allIdx[pos] = i;
+        }
       }
     }
-  }
-}
 
-int voroshilov_v_convex_hull_components_omp::FindComponentsInArea(std::vector<int>& labels, Image& image, int start_y,
-                                                                  int end_y, int index_offset) {
-  int width = image.width;
-  int offset = index_offset;  // unique index in this area
-  int num_components = 0;
+    // 6) Сбор компонентов: для метки L от 2 до num_components-1
+    int M = num_components - 2;
+    std::vector<Component> components;
+    components.resize(std::max(0, M));
 
-  for (int y = start_y; y < end_y; y++) {
-    for (int x = 0; x < width; x++) {
-      int index = (y * width) + x;
-      if (image.pixels[index] == 1 && labels[index] == 0) {
-        DepthComponentSearchInArea(labels, image, y, x, offset, start_y, end_y);
-        num_components++;
-        offset++;
+    #pragma omp parallel for schedule(dynamic)
+    for (int L = 2; L < num_components; ++L) {
+      int cnt    = counts[L];
+      int offset = startPos[L];
+
+      Component comp;
+      comp.reserve(cnt);
+      for (int k = 0; k < cnt; ++k) {
+        int idx = allIdx[offset + k];
+        int y   = idx / width;
+        int x   = idx % width;
+        comp.emplace_back(y, x, L);
       }
+      components[L - 2] = std::move(comp);
     }
-  }
 
-  return num_components;
+    return components;
 }
 
 std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOMP(Image& image) {
   int height = image.height;
   int width = image.width;
-  int n = height * width;
+  int N = height * width;
 
-  std::vector<int> labels(n, 0);
   int num_threads = omp_get_max_threads();
+  if (num_threads < 1) {
+    num_threads = 1;
+  }
 
-  int area_height = height / num_threads;
-  int remainder = height % num_threads;
   std::vector<int> start_y(num_threads);
   std::vector<int> end_y(num_threads);
-  std::vector<int> index_offset(num_threads);
+  int base_h = height / num_threads;
+  int rem = height % num_threads;
+  int cur_y = 0;
+  for (int t = 0; t < num_threads; t++) {
+    int h = base_h + (t < rem ? 1 : 0);
+    start_y[t] = cur_y;
+    end_y[t] = cur_y + h;
+    cur_y += h;
+  }
 
-  if (num_threads == 1) {
-    start_y[0] = 0;
-    end_y[0] = height;
-    index_offset[0] = 2;
-  } else {
-    for (size_t i = 1; i < start_y.size(); i++) {
-      start_y[i] = start_y[i - 1] + area_height;
-      if (remainder > 0) {
-        start_y[i]++;
-        remainder--;
+  std::vector<std::vector<int>> remapLocMap(num_threads);
+  std::vector<std::vector<int>> remapLocList(num_threads);
+  for(int t = 0; t < num_threads; ++t) {
+      int h   = end_y[t] - start_y[t];
+      int area= h * width;
+      remapLocMap[t].assign(area + 1, 0);      // все нули
+      remapLocList[t].reserve(area / 8);
+  }
+
+  std::vector<int> labels(N, 0);
+  std::vector<int> localCounts(num_threads, 0);
+  std::vector<UnionFind> ufs;                             
+  ufs.reserve(num_threads);
+
+  for (int t = 0; t < num_threads; t++) {
+      int h = end_y[t] - start_y[t];
+      int area = h * width;
+      ufs.emplace_back(area);
+  }
+
+  #pragma omp parallel
+  {
+    int tid = omp_get_thread_num();
+    int y0 = start_y[tid];
+    int y1 = end_y[tid];
+    int h = y1 - y0;
+    int areaSize = h * width;
+
+    // FirstPass:
+    auto start = std::chrono::high_resolution_clock::now();
+
+    UnionFind& uf = ufs[tid];
+    int offsetRow = y0 * width;
+
+    for (int localIdx = 0; localIdx < areaSize; localIdx++) {
+      int globalIdx = offsetRow + localIdx;
+      if (image.pixels[globalIdx] == 0) {
+        labels[globalIdx] = 0;
+        continue;
+      }
+      labels[globalIdx] = localIdx + 1;
+
+      int y = y0 + (localIdx / width);
+      int x = localIdx % width;
+
+      if (x > 0 && image.pixels[globalIdx - 1] == 1) {
+        uf.Union(localIdx, localIdx - 1);
+      }
+      if (y > y0) {
+        int aboveLocal = (y - y0 - 1) * width + x;
+        if (image.pixels[globalIdx - width] == 1) {
+          uf.Union(localIdx, aboveLocal);
+        }
+        if (x > 0 && image.pixels[globalIdx - width - 1] == 1) {
+          uf.Union(localIdx, aboveLocal - 1);
+        }
+        if (x + 1 < width && image.pixels[globalIdx - width + 1] == 1) {
+          uf.Union(localIdx, aboveLocal + 1);
+        }
       }
     }
 
-    for (size_t i = 0; i < end_y.size() - 1; i++) {
-      end_y[i] = start_y[i + 1];
-    }
-    end_y[end_y.size() - 1] = height;
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::cout << "[FirstPass = " << duration.count() << " ms] \n";
 
-    for (int i = 0; i < num_threads; i++) {
-      index_offset[i] = (i * 100000) + 2;
+    // Renumerate:
+    start = std::chrono::high_resolution_clock::now();
+
+    auto & mapp = remapLocMap[tid];    // вектор length=areaSize+1, изначально 0
+    auto & lst  = remapLocList[tid];   // список встреченных корней
+    lst.clear();                       // чистим из предыдущего запуска
+    int nextLocalLab = 0;
+
+    for(int localIdx = 0; localIdx < areaSize; ++localIdx) {
+      int i = offsetRow + localIdx;
+      if (image.pixels[i] == 0) {
+        labels[i] = 0;
+        continue;
+      }
+      int root = uf.FindRoot(localIdx);
+      if (mapp[root] == 0) {
+        mapp[root] = ++nextLocalLab;
+        lst.push_back(root);
+      }
+      labels[i] = mapp[root];
+    }
+    localCounts[tid] = nextLocalLab;
+
+    end = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::cout << "[Renumerate = " << duration.count() << " ms] \n";
+  } // omp parallel
+  
+
+  // Offset:
+  auto start = std::chrono::high_resolution_clock::now();
+
+  std::vector<int> offsets(num_threads, 0);
+  for (int t = 1; t < num_threads; t++) {
+      offsets[t] = offsets[t - 1] + localCounts[t - 1];
+  }
+  int totalBeforeMerge = offsets[num_threads - 1] + localCounts[num_threads - 1];
+
+#pragma omp parallel for schedule(static)
+  for (int t = 0; t < num_threads; t++) {
+    int y0 = start_y[t];
+    int y1 = end_y[t];
+    int areaSize = (y1 - y0) * width;
+    int offsetRow = y0 * width;
+    int offLab = offsets[t];
+    for (int localIdx = 0; localIdx < areaSize; localIdx++) {
+      int i = offsetRow + localIdx;
+      if (labels[i] > 0) {
+        labels[i] += offLab;
+      }
     }
   }
 
-  int num_components = 0;
+  auto end = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  std::cout << "[Offset = " << duration.count() << " ms] \n";
 
-#pragma omp parallel
-  {
-    int thread_id = omp_get_thread_num();
+  // Merge:
+  start = std::chrono::high_resolution_clock::now();
 
-    num_components +=
-        FindComponentsInArea(labels, image, start_y[thread_id], end_y[thread_id], index_offset[thread_id]);
+  UnionFind ufGlobal(totalBeforeMerge + 1);
+
+  for (int t = 1; t < num_threads; t++) {
+    int yTop = end_y[t-1] - 1;
+    int yBottom = start_y[t];
+    int globalTop = yTop * width;
+    int globalBottom = yBottom * width;
+    for (int x = 0; x < width; x++) {
+      int labTop = labels[globalTop + x];
+      int labBottom = labels[globalBottom + x];
+      if (labTop > 0 && labBottom > 0) {
+        ufGlobal.Union(labTop, labBottom);
+      }
+      if (x > 0) {
+        int labBottom2 = labels[globalBottom + (x - 1)];
+        if (labTop > 0 && labBottom2 > 0) {
+          ufGlobal.Union(labTop, labBottom2);
+        }
+      }
+      if (x + 1 < width) {
+        int labBottom3 = labels[globalBottom + (x + 1)];
+        if (labTop > 0 && labBottom3 > 0) {
+          ufGlobal.Union(labTop, labBottom3);
+        }
+      }
+    }
   }
 
-  MergeLabels(labels, image, num_threads, end_y);
+  end = std::chrono::high_resolution_clock::now();
+  duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  std::cout << "[Merge = " << duration.count() << " ms] \n";
 
-  std::vector<Component> final_components = LabelsToComponents(labels, image, num_components);
+  // FinalLabeling:
+  start = std::chrono::high_resolution_clock::now();
+
+  std::vector<int> finalMap(totalBeforeMerge + 1, 0);
+  std::vector<int> finalList;
+  finalList.reserve(totalBeforeMerge);
+  int nextFinal = 0;
+  for(int lab = 1; lab <= totalBeforeMerge; ++lab) {
+    int root = ufGlobal.FindRoot(lab);
+    if(finalMap[root] == 0) {
+      finalMap[root] = ++nextFinal;
+      finalList.push_back(root);
+    }
+  }
+
+  #pragma omp parallel for schedule(static)
+  for(int i = 0; i < N; ++i) {
+    int l = labels[i];
+    if(l > 0) {
+      int r = ufGlobal.FindRoot(l);
+      labels[i] = finalMap[r];
+    }
+  }
+
+  end = std::chrono::high_resolution_clock::now();
+  duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  std::cout << "[FinalLabeling = " << duration.count() << " ms] \n";
+
+  start = std::chrono::high_resolution_clock::now();
+
+  std::vector<Component> final_components = LabelsToComponents(labels, image, nextFinal + 1);
+
+  end = std::chrono::high_resolution_clock::now();
+  duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  std::cout << "[LabelsToComponents = " << duration.count() << " ms] \n";
+
   return final_components;
 }
 
