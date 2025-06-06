@@ -154,9 +154,7 @@ void voroshilov_v_convex_hull_components_stl::MergeLabels(std::vector<int>& labe
 
   int max_raw_label = 0;
   for (int v : labels) {
-    if (v > max_raw_label) {
-      max_raw_label = v;
-    }
+    max_raw_label = std::max(v, max_raw_label);
   }
   UnionFind uf(max_raw_label + 1);
 
