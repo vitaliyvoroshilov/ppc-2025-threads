@@ -56,6 +56,8 @@ class UnionFind {
 
 std::vector<Component> LabelsToComponents(std::vector<int>& labels, Image& image, int num_components);
 
+void UnionLabels(UnionFind& uf, std::vector<int>& labels, Image& image, int num_threads, std::vector<int>& end_y);
+
 void MergeLabels(std::vector<int>& labels, Image& image, int num_threads, std::vector<int>& end_y);
 
 void DepthComponentSearchInArea(std::vector<int>& labels, Image& image, int sy, int sx, int index, int start_y,

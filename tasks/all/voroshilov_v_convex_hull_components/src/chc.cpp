@@ -101,19 +101,10 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::LabelsToComponen
   return components;
 }
 
-void voroshilov_v_convex_hull_components_all::MergeLabels(std::vector<int>& labels, Image& image, int num_threads,
-                                                          std::vector<int>& end_y) {
+void voroshilov_v_convex_hull_components_all::UnionLabels(UnionFind& uf, std::vector<int>& labels, Image& image,
+                                                          int num_threads, std::vector<int>& end_y) {
   int height = image.height;
   int width = image.width;
-  int n = height * width;
-
-  int max_raw_label = 0;
-  for (int v : labels) {
-    if (v > max_raw_label) {
-      max_raw_label = v;
-    }
-  }
-  UnionFind uf(max_raw_label + 1);
 
   for (int i = 0; i < num_threads; i++) {
     int y = end_y[i] - 1;
@@ -145,6 +136,23 @@ void voroshilov_v_convex_hull_components_all::MergeLabels(std::vector<int>& labe
       }
     }
   }
+}
+
+void voroshilov_v_convex_hull_components_all::MergeLabels(std::vector<int>& labels, Image& image, int num_threads,
+                                                          std::vector<int>& end_y) {
+  int height = image.height;
+  int width = image.width;
+  int n = height * width;
+
+  int max_raw_label = 0;
+  for (int v : labels) {
+    if (v > max_raw_label) {
+      max_raw_label = v;
+    }
+  }
+  UnionFind uf(max_raw_label + 1);
+
+  UnionLabels(uf, labels, image, num_threads, end_y);
 
 #pragma omp parallel for schedule(static)
   for (int i = 0; i < n; i++) {

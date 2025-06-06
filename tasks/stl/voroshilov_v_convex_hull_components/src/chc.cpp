@@ -111,15 +111,10 @@ std::vector<Component> voroshilov_v_convex_hull_components_stl::LabelsToComponen
   return components;
 }
 
-void voroshilov_v_convex_hull_components_stl::MergeLabels(std::vector<int>& labels, Image& image, int num_threads,
-                                                          std::vector<int>& end_y) {
-  int max_raw_label = 0;
-  for (int v : labels) {
-    if (v > max_raw_label) {
-      max_raw_label = v;
-    }
-  }
-  UnionFind uf(max_raw_label + 1);
+void voroshilov_v_convex_hull_components_stl::UnionLabels(UnionFind& uf, std::vector<int>& labels, Image& image,
+                                                          int num_threads, std::vector<int>& end_y) {
+  int height = image.height;
+  int width = image.width;
 
   for (int i = 0; i < num_threads; i++) {
     int y = end_y[i] - 1;
@@ -151,6 +146,25 @@ void voroshilov_v_convex_hull_components_stl::MergeLabels(std::vector<int>& labe
       }
     }
   }
+}
+
+void voroshilov_v_convex_hull_components_stl::MergeLabels(std::vector<int>& labels, Image& image, int num_threads,
+                                                          std::vector<int>& end_y) {
+  int height = image.height;
+  int width = image.width;
+  int n = height * width;
+
+  int max_raw_label = 0;
+  for (int v : labels) {
+    if (v > max_raw_label) {
+      max_raw_label = v;
+    }
+  }
+  UnionFind uf(max_raw_label + 1);
+
+  UnionLabels(uf, labels, image, num_threads, end_y);
+
+  std::vector<std::thread> threads;
 
   int chunk = (n + num_threads - 1) / num_threads;
   for (int t = 0; t < num_threads; t++) {
@@ -256,7 +270,8 @@ std::vector<Component> voroshilov_v_convex_hull_components_stl::FindComponentsST
   for (auto& th : threads) {
     th.join();
   }
-  threads.clear();
+
+  MergeLabels(labels, image, num_threads, end_y);
 
   std::vector<Component> final_components = LabelsToComponents(labels, image, num_components);
   return final_components;

@@ -103,15 +103,10 @@ std::vector<Component> voroshilov_v_convex_hull_components_tbb::LabelsToComponen
   return components;
 }
 
-void voroshilov_v_convex_hull_components_tbb::MergeLabels(std::vector<int>& labels, Image& image, int num_threads,
-                                                          std::vector<int>& end_y) {
-  int max_raw_label = 0;
-  for (int v : labels) {
-    if (v > max_raw_label) {
-      max_raw_label = v;
-    }
-  }
-  UnionFind uf(max_raw_label + 1);
+void voroshilov_v_convex_hull_components_tbb::UnionLabels(UnionFind& uf, std::vector<int>& labels, Image& image,
+                                                          int num_threads, std::vector<int>& end_y) {
+  int height = image.height;
+  int width = image.width;
 
   for (int i = 0; i < num_threads; i++) {
     int y = end_y[i] - 1;
@@ -143,6 +138,25 @@ void voroshilov_v_convex_hull_components_tbb::MergeLabels(std::vector<int>& labe
       }
     }
   }
+}
+
+void voroshilov_v_convex_hull_components_tbb::MergeLabels(std::vector<int>& labels, Image& image, int num_threads,
+                                                          std::vector<int>& end_y) {
+  int height = image.height;
+  int width = image.width;
+  int n = height * width;
+
+  int max_raw_label = 0;
+  for (int v : labels) {
+    if (v > max_raw_label) {
+      max_raw_label = v;
+    }
+  }
+  UnionFind uf(max_raw_label + 1);
+
+  UnionLabels(uf, labels, image, num_threads, end_y);
+
+  oneapi::tbb::task_arena arena(num_threads);
 
   arena.execute([&] {
     oneapi::tbb::parallel_for(0, n, [&](int i) {
@@ -254,6 +268,8 @@ std::vector<Component> voroshilov_v_convex_hull_components_tbb::FindComponentsTB
           FindComponentsInArea(labels, image, start_y[thread_id], end_y[thread_id], index_offset[thread_id]);
     });
   });
+
+  MergeLabels(labels, image, num_threads, end_y);
 
   std::vector<Component> final_components = LabelsToComponents(labels, image, num_components);
   return final_components;
