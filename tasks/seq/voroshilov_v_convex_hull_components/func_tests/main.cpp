@@ -21,9 +21,9 @@ namespace {
 void SortHulls(std::vector<Hull>& hulls) {
   std::ranges::sort(hulls, [](const Hull& a, const Hull& b) {
     const Pixel& left_top_a = *std::ranges::min_element(
-        a, [](const Pixel& p1, const Pixel& p2) { return p1.x < p2.x || (p1.x == p2.x && p1.y < p2.y); });
+        a.pixels, [](const Pixel& p1, const Pixel& p2) { return p1.x < p2.x || (p1.x == p2.x && p1.y < p2.y); });
     const Pixel& left_top_b = *std::ranges::min_element(
-        b, [](const Pixel& p1, const Pixel& p2) { return p1.x < p2.x || (p1.x == p2.x && p1.y < p2.y); });
+        b.pixels, [](const Pixel& p1, const Pixel& p2) { return p1.x < p2.x || (p1.x == p2.x && p1.y < p2.y); });
 
     return left_top_a.x < left_top_b.x || (left_top_a.x == left_top_b.x && left_top_a.y < left_top_b.y);
   });
