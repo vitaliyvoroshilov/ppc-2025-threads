@@ -1,9 +1,9 @@
 #include "../include/chc_omp.hpp"
 
 #include <algorithm>
-#include <vector>
 #include <chrono>
 #include <iostream>
+#include <vector>
 
 #include "../include/chc.hpp"
 
@@ -34,7 +34,6 @@ bool voroshilov_v_convex_hull_components_omp::ChcTaskOMP::PreProcessingImpl() {
 }
 
 bool voroshilov_v_convex_hull_components_omp::ChcTaskOMP::RunImpl() {
-
   auto start = std::chrono::high_resolution_clock::now();
 
   Image image(height_in_, width_in_, pixels_in_);

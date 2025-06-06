@@ -1,9 +1,9 @@
 #include "seq/voroshilov_v_convex_hull_components/include/chc_seq.hpp"
 
 #include <algorithm>
-#include <vector>
 #include <chrono>
 #include <iostream>
+#include <vector>
 
 #include "seq/voroshilov_v_convex_hull_components/include/chc.hpp"
 
@@ -34,7 +34,6 @@ bool voroshilov_v_convex_hull_components_seq::ChcTaskSequential::PreProcessingIm
 }
 
 bool voroshilov_v_convex_hull_components_seq::ChcTaskSequential::RunImpl() {
-
   auto start = std::chrono::high_resolution_clock::now();
 
   Image image(height_in_, width_in_, pixels_in_);

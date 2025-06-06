@@ -3,14 +3,14 @@
 #include <omp.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
+#include <iostream>
 #include <stack>
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <chrono>
-#include <iostream>
 
 using namespace voroshilov_v_convex_hull_components_omp;
 
