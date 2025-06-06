@@ -101,6 +101,59 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::LabelsToComponen
   return components;
 }
 
+void voroshilov_v_convex_hull_components_all::MergeLabels(std::vector<int>& labels, Image& image, int num_threads,
+                                                          std::vector<int>& end_y) {
+  int height = image.height;
+  int width = image.width;
+  int n = height * width;
+
+  int max_raw_label = 0;
+  for (int v : labels) {
+    if (v > max_raw_label) {
+      max_raw_label = v;
+    }
+  }
+  UnionFind uf(max_raw_label + 1);
+
+  for (int i = 0; i < num_threads; i++) {
+    int y = end_y[i] - 1;
+    if (y < 0 || y >= height - 1) {
+      continue;
+    }
+    int base = y * width;
+    int base_down = (y + 1) * width;
+    for (int x = 0; x < width; x++) {
+      int id1 = labels[base + x];
+      if (id1 <= 1) {
+        continue;
+      }
+      int id2 = labels[base_down + x];
+      if (id2 > 1) {
+        uf.Union(id1, id2);
+      }
+      if (x > 0) {
+        int id3 = labels[base_down + (x - 1)];
+        if (id3 > 1) {
+          uf.Union(id1, id3);
+        }
+      }
+      if (x + 1 < width) {
+        int id4 = labels[base_down + (x + 1)];
+        if (id4 > 1) {
+          uf.Union(id1, id4);
+        }
+      }
+    }
+  }
+
+#pragma omp parallel for schedule(static)
+  for (int i = 0; i < n; i++) {
+    if (labels[i] > 1) {
+      labels[i] = uf.FindRoot(labels[i]);
+    }
+  }
+}
+
 void voroshilov_v_convex_hull_components_all::DepthComponentSearchInArea(std::vector<int>& labels, Image& image, int sy,
                                                                          int sx, int index, int start_y, int end_y) {
   const int step_y[8] = {1, 1, 1, 0, 0, -1, -1, -1};  // Offsets by Y (up, stand, down)
@@ -108,7 +161,7 @@ void voroshilov_v_convex_hull_components_all::DepthComponentSearchInArea(std::ve
 
   std::stack<int> stack;
   int width = image.width;
-  int start_index = sy * width + sx;
+  int start_index = (sy * width) + sx;
   labels[start_index] = index;
   stack.push(start_index);
 
@@ -120,8 +173,10 @@ void voroshilov_v_convex_hull_components_all::DepthComponentSearchInArea(std::ve
     for (int i = 0; i < 8; i++) {
       int ny = cy + step_y[i];
       int nx = cx + step_x[i];
-      if (ny >= end_y || ny < start_y || nx >= width || nx < 0) continue;
-      int next_index = ny * width + nx;
+      if (ny >= end_y || ny < start_y || nx >= width || nx < 0) {
+        continue;
+      }
+      int next_index = (ny * width) + nx;
       if (image.pixels[next_index] == 1 && labels[next_index] == 0) {
         labels[next_index] = index;
         stack.push(next_index);
@@ -138,7 +193,7 @@ int voroshilov_v_convex_hull_components_all::FindComponentsInArea(std::vector<in
 
   for (int y = start_y; y < end_y; y++) {
     for (int x = 0; x < width; x++) {
-      int index = y * width + x;
+      int index = (y * width) + x;
       if (image.pixels[index] == 1 && labels[index] == 0) {
         DepthComponentSearchInArea(labels, image, y, x, offset, start_y, end_y);
         num_components++;
@@ -197,39 +252,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsOM
         FindComponentsInArea(labels, image, start_y[thread_id], end_y[thread_id], index_offset[thread_id]);
   }
 
-  int max_raw_label = 0;
-  for (int v : labels) {
-    if (v > max_raw_label) max_raw_label = v;
-  }
-  UnionFind uf(max_raw_label + 1);
-
-  for (int i = 0; i < num_threads; i++) {
-    int y = end_y[i] - 1;
-    if (y < 0 || y >= height - 1) continue;
-    int base = y * width;
-    int base_down = (y + 1) * width;
-    for (int x = 0; x < width; ++x) {
-      int id1 = labels[base + x];
-      if (id1 <= 1) continue;
-      int id2 = labels[base_down + x];
-      if (id2 > 1) uf.Union(id1, id2);
-      if (x > 0) {
-        int id3 = labels[base_down + (x - 1)];
-        if (id3 > 1) uf.Union(id1, id3);
-      }
-      if (x + 1 < width) {
-        int id4 = labels[base_down + (x + 1)];
-        if (id4 > 1) uf.Union(id1, id4);
-      }
-    }
-  }
-
-#pragma omp parallel for schedule(static)
-  for (int i = 0; i < n; ++i) {
-    if (labels[i] > 1) {
-      labels[i] = uf.FindRoot(labels[i]);
-    }
-  }
+  MergeLabels(labels, image, num_threads, end_y);
 
   std::vector<Component> final_components = LabelsToComponents(labels, image, num_components);
   return final_components;

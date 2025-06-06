@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <stack>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 using namespace voroshilov_v_convex_hull_components_seq;
@@ -76,7 +77,7 @@ void voroshilov_v_convex_hull_components_seq::DepthComponentSearch(std::vector<i
   std::stack<int> stack;
   int height = image.height;
   int width = image.width;
-  int start_index = sy * width + sx;
+  int start_index = (sy * width) + sx;
   labels[start_index] = index;
   stack.push(start_index);
 
@@ -88,8 +89,10 @@ void voroshilov_v_convex_hull_components_seq::DepthComponentSearch(std::vector<i
     for (int i = 0; i < 8; i++) {
       int ny = cy + step_y[i];
       int nx = cx + step_x[i];
-      if (ny < 0 || ny >= height || nx < 0 || nx >= width) continue;
-      int next_index = ny * width + nx;
+      if (ny < 0 || ny >= height || nx < 0 || nx >= width) {
+        continue;
+      }
+      int next_index = (ny * width) + nx;
       if (image.pixels[next_index] == 1 && labels[next_index] == 0) {
         labels[next_index] = index;
         stack.push(next_index);
@@ -108,7 +111,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_seq::FindComponents(I
 
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
-      int index = y * width + x;
+      int index = (y * width) + x;
       if (image.pixels[index] == 1 && labels[index] == 0) {
         DepthComponentSearch(labels, image, y, x, num_components + 2);
         num_components++;

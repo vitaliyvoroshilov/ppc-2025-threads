@@ -29,10 +29,10 @@ Image::Image(int hght, int wdth, std::vector<int> pxls) {
   std::vector<std::thread> threads;
 
   for (int t = 0; t < num_threads; t++) {
-    int y1 = t * chunk;
-    int y2 = std::min(y1 + chunk, height);
-    threads.emplace_back([this, y1, y2, &pxls]() {
-      for (int y = y1; y < y2; y++) {
+    int start_y = t * chunk;
+    int end_y = std::min(start_y + chunk, height);
+    threads.emplace_back([this, start_y, end_y, &pxls]() {
+      for (int y = start_y; y < end_y; y++) {
         for (int x = 0; x < width; x++) {
           pixels[(y * width) + x] = Pixel(y, x, pxls[(y * width) + x]);
         }
@@ -111,6 +111,70 @@ std::vector<Component> voroshilov_v_convex_hull_components_stl::LabelsToComponen
   return components;
 }
 
+void voroshilov_v_convex_hull_components_stl::MergeLabels(std::vector<int>& labels, Image& image, int num_threads,
+                                                          std::vector<int>& end_y) {
+  int max_raw_label = 0;
+  for (int v : labels) {
+    if (v > max_raw_label) {
+      max_raw_label = v;
+    }
+  }
+  UnionFind uf(max_raw_label + 1);
+
+  for (int i = 0; i < num_threads; i++) {
+    int y = end_y[i] - 1;
+    if (y < 0 || y >= height - 1) {
+      continue;
+    }
+    int base = y * width;
+    int base_down = (y + 1) * width;
+    for (int x = 0; x < width; ++x) {
+      int id1 = labels[base + x];
+      if (id1 <= 1) {
+        continue;
+      }
+      int id2 = labels[base_down + x];
+      if (id2 > 1) {
+        uf.Union(id1, id2);
+      }
+      if (x > 0) {
+        int id3 = labels[base_down + (x - 1)];
+        if (id3 > 1) {
+          uf.Union(id1, id3);
+        }
+      }
+      if (x + 1 < width) {
+        int id4 = labels[base_down + (x + 1)];
+        if (id4 > 1) {
+          uf.Union(id1, id4);
+        }
+      }
+    }
+  }
+
+  int chunk = (n + num_threads - 1) / num_threads;
+  for (int t = 0; t < num_threads; t++) {
+    int begin = t * chunk;
+    int end = std::min(begin + chunk, n);
+
+    if (begin >= end) {
+      break;
+    }
+
+    threads.emplace_back([begin, end, &labels, &uf]() {
+      for (int i = begin; i < end; i++) {
+        if (labels[i] > 1) {
+          labels[i] = uf.FindRoot(labels[i]);
+        }
+      }
+    });
+  }
+
+  for (auto& th : threads) {
+    th.join();
+  }
+}
+
 void voroshilov_v_convex_hull_components_stl::DepthComponentSearchInArea(std::vector<int>& labels, Image& image, int sy,
                                                                          int sx, int index, int start_y, int end_y) {
   const int step_y[8] = {1, 1, 1, 0, 0, -1, -1, -1};  // Offsets by Y (up, stand, down)
@@ -118,7 +182,7 @@ void voroshilov_v_convex_hull_components_stl::DepthComponentSearchInArea(std::ve
 
   std::stack<int> stack;
   int width = image.width;
-  int start_index = sy * width + sx;
+  int start_index = (sy * width) + sx;
   labels[start_index] = index;
   stack.push(start_index);
 
@@ -130,8 +194,10 @@ void voroshilov_v_convex_hull_components_stl::DepthComponentSearchInArea(std::ve
     for (int i = 0; i < 8; i++) {
       int ny = cy + step_y[i];
       int nx = cx + step_x[i];
-      if (ny >= end_y || ny < start_y || nx >= width || nx < 0) continue;
-      int next_index = ny * width + nx;
+      if (ny >= end_y || ny < start_y || nx >= width || nx < 0) {
+        continue;
+      }
+      int next_index = (ny * width) + nx;
       if (image.pixels[next_index] == 1 && labels[next_index] == 0) {
         labels[next_index] = index;
         stack.push(next_index);
@@ -148,7 +214,7 @@ int voroshilov_v_convex_hull_components_stl::FindComponentsInArea(std::vector<in
 
   for (int y = start_y; y < end_y; y++) {
     for (int x = 0; x < width; x++) {
-      int index = y * width + x;
+      int index = (y * width) + x;
       if (image.pixels[index] == 1 && labels[index] == 0) {
         DepthComponentSearchInArea(labels, image, y, x, offset, start_y, end_y);
         num_components++;
@@ -170,7 +236,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_stl::FindComponentsST
   std::vector<std::thread> threads;
   int num_threads = ppc::util::GetPPCNumThreads();
   int chunk_height = (height + num_threads - 1) / num_threads;
-  std::vector<int> y2(num_threads);
+  std::vector<int> end_y(num_threads);
 
   std::vector<int> index_offset(num_threads);
   for (int i = 0; i < num_threads; i++) {
@@ -180,10 +246,10 @@ std::vector<Component> voroshilov_v_convex_hull_components_stl::FindComponentsST
   int num_components = 0;
 
   for (int t = 0; t < num_threads; t++) {
-    int y1 = t * chunk_height;
-    threads.emplace_back([&, t, y1]() {
-      y2[t] = std::min(y1 + chunk_height, height);
-      num_components += FindComponentsInArea(labels, image, y1, y2[t], index_offset[t]);
+    int start_y = t * chunk_height;
+    threads.emplace_back([&, t, start_y]() {
+      end_y[t] = std::min(start_y + chunk_height, height);
+      num_components += FindComponentsInArea(labels, image, start_y, end_y[t], index_offset[t]);
     });
   }
 
@@ -191,53 +257,6 @@ std::vector<Component> voroshilov_v_convex_hull_components_stl::FindComponentsST
     th.join();
   }
   threads.clear();
-
-  int max_raw_label = 0;
-  for (int v : labels) {
-    if (v > max_raw_label) max_raw_label = v;
-  }
-  UnionFind uf(max_raw_label + 1);
-
-  for (int i = 0; i < num_threads; i++) {
-    int y = y2[i] - 1;
-    if (y < 0 || y >= height - 1) continue;
-    int base = y * width;
-    int base_down = (y + 1) * width;
-    for (int x = 0; x < width; ++x) {
-      int id1 = labels[base + x];
-      if (id1 <= 1) continue;
-      int id2 = labels[base_down + x];
-      if (id2 > 1) uf.Union(id1, id2);
-      if (x > 0) {
-        int id3 = labels[base_down + (x - 1)];
-        if (id3 > 1) uf.Union(id1, id3);
-      }
-      if (x + 1 < width) {
-        int id4 = labels[base_down + (x + 1)];
-        if (id4 > 1) uf.Union(id1, id4);
-      }
-    }
-  }
-
-  int chunk = (n + (int)num_threads - 1) / (int)num_threads;
-  for (int t = 0; t < num_threads; t++) {
-    int begin = t * chunk;
-    int end = std::min(begin + chunk, n);
-
-    if (begin >= end) break;
-
-    threads.emplace_back([begin, end, &labels, &uf]() {
-      for (int i = begin; i < end; i++) {
-        if (labels[i] > 1) {
-          labels[i] = uf.FindRoot(labels[i]);
-        }
-      }
-    });
-  }
-
-  for (auto& th : threads) {
-    th.join();
-  }
 
   std::vector<Component> final_components = LabelsToComponents(labels, image, num_components);
   return final_components;

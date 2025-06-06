@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstddef>
-#include <unordered_map>
 #include <vector>
 
 namespace voroshilov_v_convex_hull_components_tbb {
@@ -56,6 +55,8 @@ class UnionFind {
 };
 
 std::vector<Component> LabelsToComponents(std::vector<int>& labels, Image& image, int num_components);
+
+void MergeLabels(std::vector<int>& labels, Image& image, int num_threads, std::vector<int>& end_y);
 
 void DepthComponentSearchInArea(std::vector<int>& labels, Image& image, int sy, int sx, int index, int start_y,
                                 int end_y);
