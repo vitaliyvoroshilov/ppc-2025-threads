@@ -77,29 +77,32 @@ std::vector<Component> voroshilov_v_convex_hull_components_tbb::LabelsToComponen
 
   std::unordered_map<int, std::vector<int>> groups;
   groups.reserve(num_components);
-
   for (int i = 0; i < n; ++i) {
     int lab = labels[i];
-    if (lab > 1) {
-      groups[lab].push_back(i);
-    }
+    if (lab > 1) groups[lab].push_back(i);
   }
 
-  std::vector<Component> components;
-  components.reserve(groups.size());
+  std::vector<int> keys;
+  keys.reserve(groups.size());
+  for (auto& kv : groups) keys.push_back(kv.first);
 
-  for (auto& kv : groups) {
-    int root_label = kv.first;
-    const std::vector<int>& idxs = kv.second;
-    Component comp;
-    comp.reserve(idxs.size());
-    for (int i : idxs) {
-      int y = i / width;
-      int x = i % width;
-      comp.emplace_back(y, x, root_label);
+  std::vector<Component> components(keys.size());
+
+  tbb::parallel_for(tbb::blocked_range<size_t>(0, keys.size()), [&](const tbb::blocked_range<size_t>& r) {
+    for (size_t idx = r.begin(); idx != r.end(); ++idx) {
+      int root_label = keys[idx];
+      const auto& idxs = groups[root_label];
+      Component comp;
+      comp.reserve(idxs.size());
+      for (int flat : idxs) {
+        int y = flat / width;
+        int x = flat % width;
+        comp.emplace_back(y, x, root_label);
+      }
+      components[idx] = std::move(comp);
     }
-    components.push_back(std::move(comp));
-  }
+  });
+
   return components;
 }
 

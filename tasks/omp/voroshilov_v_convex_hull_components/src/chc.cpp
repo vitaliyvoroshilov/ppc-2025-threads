@@ -63,48 +63,47 @@ void UnionFind::Union(int x, int y) {
   }
 }
 
-std::vector<Component> voroshilov_v_convex_hull_components_omp::LabelsToComponents(
-    std::vector<int>& labels, Image& image, int num_components) 
-{
-    int height = image.height;
-    int width  = image.width;
-    int n      = height * width;
+std::vector<Component> voroshilov_v_convex_hull_components_omp::LabelsToComponents(std::vector<int>& labels,
+                                                                                   Image& image, int num_components) {
+  int height = image.height;
+  int width = image.width;
+  int n = height * width;
 
-    std::unordered_map<int, std::vector<int>> groups;
-    groups.reserve(num_components);
+  std::unordered_map<int, std::vector<int>> groups;
+  groups.reserve(num_components);
 
-    for (int i = 0; i < n; i++) {
-      int lab = labels[i];
-      if (lab > 1) {
-        groups[lab].push_back(i);
-      }
+  for (int i = 0; i < n; i++) {
+    int lab = labels[i];
+    if (lab > 1) {
+      groups[lab].push_back(i);
     }
+  }
 
-    std::vector<int> keys;
-    keys.reserve(groups.size());
-    for (auto& kv : groups) {
-      keys.push_back(kv.first);
+  std::vector<int> keys;
+  keys.reserve(groups.size());
+  for (auto& kv : groups) {
+    keys.push_back(kv.first);
+  }
+
+  std::vector<Component> components;
+  components.resize(keys.size());
+
+#pragma omp parallel for schedule(dynamic)
+  for (int idx = 0; idx < (int)keys.size(); idx++) {
+    int root_label = keys[idx];
+    const std::vector<int>& idxs = groups[root_label];
+    Component comp;
+    comp.reserve(idxs.size());
+    for (int flat = 0; flat < (int)idxs.size(); flat++) {
+      int i = idxs[flat];
+      int y = i / width;
+      int x = i % width;
+      comp.emplace_back(y, x, root_label);
     }
+    components[idx] = std::move(comp);
+  }
 
-    std::vector<Component> components;
-    components.resize(keys.size());  
-
-    #pragma omp parallel for schedule (dynamic)
-    for (int idx = 0; idx < (int)keys.size(); ++idx) {
-      int root_label = keys[idx];
-      const std::vector<int>& idxs = groups[root_label];
-      Component comp;
-      comp.reserve(idxs.size());
-      for (int flat = 0; flat < (int)idxs.size(); ++flat) {
-        int i = idxs[flat];
-        int y = i / width;
-        int x = i % width;
-        comp.emplace_back(y, x, root_label);
-      }
-      components[idx] = std::move(comp);
-    }
-
-    return components;
+  return components;
 }
 
 void voroshilov_v_convex_hull_components_omp::UnionLabels(UnionFind& uf, std::vector<int>& labels, Image& image,
