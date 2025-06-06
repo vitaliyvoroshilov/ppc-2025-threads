@@ -104,37 +104,35 @@ std::vector<Component> voroshilov_v_convex_hull_components_tbb::LabelsToComponen
 }
 
 void voroshilov_v_convex_hull_components_tbb::UnionLabels(UnionFind& uf, std::vector<int>& labels, Image& image,
-                                                          int num_threads, std::vector<int>& end_y) {
+                                                          int num_threads, int end_y) {
   int height = image.height;
   int width = image.width;
 
-  for (int i = 0; i < num_threads; i++) {
-    int y = end_y[i] - 1;
-    if (y < 0 || y >= height - 1) {
+  int y = end_y - 1;
+  if (y < 0 || y >= height - 1) {
+    return;
+  }
+  int base = y * width;
+  int base_down = (y + 1) * width;
+  for (int x = 0; x < width; ++x) {
+    int id1 = labels[base + x];
+    if (id1 <= 1) {
       continue;
     }
-    int base = y * width;
-    int base_down = (y + 1) * width;
-    for (int x = 0; x < width; ++x) {
-      int id1 = labels[base + x];
-      if (id1 <= 1) {
-        continue;
+    int id2 = labels[base_down + x];
+    if (id2 > 1) {
+      uf.Union(id1, id2);
+    }
+    if (x > 0) {
+      int id3 = labels[base_down + (x - 1)];
+      if (id3 > 1) {
+        uf.Union(id1, id3);
       }
-      int id2 = labels[base_down + x];
-      if (id2 > 1) {
-        uf.Union(id1, id2);
-      }
-      if (x > 0) {
-        int id3 = labels[base_down + (x - 1)];
-        if (id3 > 1) {
-          uf.Union(id1, id3);
-        }
-      }
-      if (x + 1 < width) {
-        int id4 = labels[base_down + (x + 1)];
-        if (id4 > 1) {
-          uf.Union(id1, id4);
-        }
+    }
+    if (x + 1 < width) {
+      int id4 = labels[base_down + (x + 1)];
+      if (id4 > 1) {
+        uf.Union(id1, id4);
       }
     }
   }
@@ -154,7 +152,9 @@ void voroshilov_v_convex_hull_components_tbb::MergeLabels(std::vector<int>& labe
   }
   UnionFind uf(max_raw_label + 1);
 
-  UnionLabels(uf, labels, image, num_threads, end_y);
+  for (int i = 0; i < num_threads; i++) {
+    UnionLabels(uf, labels, image, num_threads, end_y[i]);
+  }
 
   oneapi::tbb::task_arena arena(num_threads);
 
