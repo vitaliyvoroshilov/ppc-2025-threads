@@ -279,15 +279,15 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
 
   MergeLabels(labels, image, num_threads, end_y);
 
-  auto end = std::chrono::high_resolution_clock::now();
-  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  end = std::chrono::high_resolution_clock::now();
+  duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
   std::cout << "[OMP MergeLabels: " << duration.count() << " ms] \n";
   start = std::chrono::high_resolution_clock::now();
 
   std::vector<Component> final_components = LabelsToComponents(labels, image, num_components);
 
-  auto end = std::chrono::high_resolution_clock::now();
-  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  end = std::chrono::high_resolution_clock::now();
+  duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
   std::cout << "[OMP LabelsToComponents: " << duration.count() << " ms] \n";
 
   return final_components;
