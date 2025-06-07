@@ -143,8 +143,7 @@ void voroshilov_v_convex_hull_components_omp::UnionLabels(UnionFind& uf, std::ve
   }
 }
 
-void voroshilov_v_convex_hull_components_omp::MergeLabels(std::vector<int>& labels, Image& image, int num_threads,
-                                                          std::vector<int>& end_y) {
+void voroshilov_v_convex_hull_components_omp::MergeLabels(std::vector<int>& labels, Image& image, int num_threads, std::vector<int>& borders) {
   int height = image.height;
   int width = image.width;
   int n = height * width;
@@ -156,7 +155,7 @@ void voroshilov_v_convex_hull_components_omp::MergeLabels(std::vector<int>& labe
   UnionFind uf(max_raw_label + 1);
 
   for (int i = 0; i < num_threads; i++) {
-    UnionLabels(uf, labels, image, num_threads, end_y[i]);
+    UnionLabels(uf, labels, image, num_threads, borders[i]);
   }
 
 #pragma omp parallel for schedule(static)
@@ -228,34 +227,10 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
   std::vector<int> labels(n, 0);
   int num_threads = omp_get_max_threads();
 
-  int area_height = height / num_threads;
+  int base_height = height / num_threads;
   int remainder = height % num_threads;
-  std::vector<int> start_y(num_threads);
-  std::vector<int> end_y(num_threads);
-  std::vector<int> index_offset(num_threads);
 
-  if (num_threads == 1) {
-    start_y[0] = 0;
-    end_y[0] = height;
-    index_offset[0] = 2;
-  } else {
-    for (size_t i = 1; i < start_y.size(); i++) {
-      start_y[i] = start_y[i - 1] + area_height;
-      if (remainder > 0) {
-        start_y[i]++;
-        remainder--;
-      }
-    }
-
-    for (size_t i = 0; i < end_y.size() - 1; i++) {
-      end_y[i] = start_y[i + 1];
-    }
-    end_y[end_y.size() - 1] = height;
-
-    for (int i = 0; i < num_threads; i++) {
-      index_offset[i] = (i * 100000) + 2;
-    }
-  }
+  std::vector<int> borders(num_threads);
 
   auto end = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -267,9 +242,24 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
 #pragma omp parallel
   {
     int thread_id = omp_get_thread_num();
+    int local_height = base_height;
+    int local_start_y;
+    int local_end_y;
+
+    if (thread_id < remainder) {
+      local_height++;
+      local_start_y = thread_id * local_height;
+    } else {
+      local_start_y = thread_id * local_height + remainder;
+    }
+    local_end_y = local_start_y + local_height;
+    
+    borders[thread_id] = local_end_y;
+
+    int label_offset = thread_id * 100000 + 2;
 
     num_components +=
-        FindComponentsInArea(labels, image, start_y[thread_id], end_y[thread_id], index_offset[thread_id]);
+        FindComponentsInArea(labels, image, local_start_y, local_end_y, label_offset);
   }
 
   end = std::chrono::high_resolution_clock::now();
@@ -277,7 +267,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
   std::cout << "[OMP Parallel: " << duration.count() << " ms] \n";
   start = std::chrono::high_resolution_clock::now();
 
-  MergeLabels(labels, image, num_threads, end_y);
+  MergeLabels(labels, image, num_threads, borders);
 
   end = std::chrono::high_resolution_clock::now();
   duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
