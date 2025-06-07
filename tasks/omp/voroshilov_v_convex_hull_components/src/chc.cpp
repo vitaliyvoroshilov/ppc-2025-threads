@@ -73,70 +73,72 @@ void UnionFind::Union(int x, int y) {
   }
 }
 
-std::vector<Component> voroshilov_v_convex_hull_components_omp::LabelsToComponents(
-    std::vector<int>& labels, Image& image, int num_components) 
+std::vector<Component>
+voroshilov_v_convex_hull_components_omp::LabelsToComponents(
+    std::vector<int>& labels,
+    Image& image,
+    int /*num_components—больше не нужен*/)
 {
-    const int height = image.height;
-    const int width  = image.width;
-    const int N      = height * width;
+    int height = image.height;
+    int width  = image.width;
+    int N      = height * width;
 
+    // 0) вычисляем реальный максимум метки
+    int max_label = 0;
+    for (int v : labels) if (v > max_label) max_label = v;
+
+    // если нет никаких компонент
+    if (max_label < 2) return {};
+
+    int B = max_label + 1;            // диапазон меток [0..max_label]
     int T = omp_get_max_threads();
     if (T < 1) T = 1;
 
-    // 1) Выделяем локальные гистограммы: localCountsThr[t][L]
-    std::vector<std::vector<int>> localCountsThr(T, std::vector<int>(num_components, 0));
+    // 1) локальные счётчики для каждой метки
+    std::vector<std::vector<int>> localCountsThr(T, std::vector<int>(B, 0));
 
     #pragma omp parallel
     {
       int t = omp_get_thread_num();
-      int chunk = (N + T - 1) / T;         // грубое равное разбиение по i
+      int chunk = (N + T - 1) / T;
       int i0 = t * chunk;
       int i1 = std::min(i0 + chunk, N);
       auto & locCounts = localCountsThr[t];
-
       for (int i = i0; i < i1; ++i) {
         int lab = labels[i];
-        if (lab > 1) {
-          locCounts[lab]++;
-        }
+        if (lab > 1) locCounts[lab]++;
       }
     }
 
-    // 2) Собираем global counts и строим префикс-сумму → startPos[L]
-    std::vector<int> counts(num_components, 0);
-    for (int L = 0; L < num_components; ++L) {
+    // 2) глобальные суммы
+    std::vector<int> counts(B, 0);
+    for (int lab = 0; lab <= max_label; ++lab) {
       int s = 0;
-      for (int t = 0; t < T; ++t) {
-        s += localCountsThr[t][L];
-      }
-      counts[L] = s;
+      for (int t = 0; t < T; ++t) s += localCountsThr[t][lab];
+      counts[lab] = s;
     }
-    // префикс-сумма по counts
-    std::vector<int> startPos(num_components, 0);
+
+    // 3) префикс-сумма
+    std::vector<int> startPos(B);
     int total = 0;
-    for (int L = 0; L < num_components; ++L) {
-      startPos[L] = total;
-      total      += counts[L];
+    for (int lab = 0; lab <= max_label; ++lab) {
+      startPos[lab] = total;
+      total += counts[lab];
     }
 
-    // 3) Подготовим precomputedOffsets[t][L], чтобы каждый поток знал,
-    //    куда писать свои элементы allIdx без гонок
-    // precomputedOffsets[t][L] = startPos[L] + sum_{u=0..t-1} localCountsThr[u][L]
-    std::vector<std::vector<int>> precomputedOffsets(T, std::vector<int>(num_components, 0));
-    for (int L = 0; L < num_components; ++L) {
-      int running = startPos[L];
+    // 4) offsets для каждого потока
+    std::vector<std::vector<int>> precomputedOffsets(T, std::vector<int>(B,0));
+    for (int lab = 0; lab <= max_label; ++lab) {
+      int run = startPos[lab];
       for (int t = 0; t < T; ++t) {
-        precomputedOffsets[t][L] = running;
-        running += localCountsThr[t][L];
+        precomputedOffsets[t][lab] = run;
+        run += localCountsThr[t][lab];
       }
     }
 
-    // 4) Выделяем плоский буфер allIdx длины total
+    // 5) соберём все flat-индексы
     std::vector<int> allIdx(total);
-
-    // 5) Второй параллельный проход: каждый поток пишет свою часть i→allIdx
-    //    Используем локальный localWrittenThr[t][L], чтобы знать, сколько мы уже записали
-    std::vector<std::vector<int>> localWrittenThr(T, std::vector<int>(num_components, 0));
+    std::vector<std::vector<int>> localWrittenThr(T, std::vector<int>(B,0));
 
     #pragma omp parallel
     {
@@ -146,7 +148,6 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::LabelsToComponen
       int i1 = std::min(i0 + chunk, N);
       auto & written = localWrittenThr[t];
       auto & offsets = precomputedOffsets[t];
-
       for (int i = i0; i < i1; ++i) {
         int lab = labels[i];
         if (lab > 1) {
@@ -156,16 +157,13 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::LabelsToComponen
       }
     }
 
-    // 6) Сбор компонентов: для метки L от 2 до num_components-1
-    int M = num_components - 2;
-    std::vector<Component> components;
-    components.resize(std::max(0, M));
-
-    #pragma omp parallel for schedule(dynamic)
-    for (int L = 2; L < num_components; ++L) {
+    // 6) финальная сборка компонентов
+    int M = max_label - 1; // метки 2..max_label → M = max_label-1 штук
+    std::vector<Component> components(M);
+    #pragma omp parallel for schedule(dynamic,1)
+    for (int L = 2; L <= max_label; ++L) {
       int cnt    = counts[L];
       int offset = startPos[L];
-
       Component comp;
       comp.reserve(cnt);
       for (int k = 0; k < cnt; ++k) {
@@ -174,7 +172,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::LabelsToComponen
         int x   = idx % width;
         comp.emplace_back(y, x, L);
       }
-      components[L - 2] = std::move(comp);
+      components[L-2] = std::move(comp);
     }
 
     return components;
