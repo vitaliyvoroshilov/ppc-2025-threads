@@ -119,7 +119,8 @@ void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::ve
 }
 
 Component voroshilov_v_convex_hull_components_omp::DepthComponentSearchInArea(Pixel start_pixel, Image& image,
-                                                                              int start_y, int end_y, std::vector<uint8_t>& thread_visited) {
+                                                                              int start_y, int end_y, std::vector<uint8_t>& thread_visited,
+                                                                              std::vector<uint8_t>& local_visited) {
   const int step_y[8] = { 1, 1, 1, 0, 0, -1, -1, -1};  // Offsets by Y (up, stand, down)
   const int step_x[8] = { -1, 0, 1, -1, 1, -1, 0, 1};  // Offsets by X (left, stand, right)
   const int height = image.height;
@@ -127,13 +128,15 @@ Component voroshilov_v_convex_hull_components_omp::DepthComponentSearchInArea(Pi
 
   std::vector<int> stack;
   stack.reserve(1000);
-  std::vector<int> local_visited;
-  local_visited.reserve(1000);
   Component component;
   component.reserve(1000);
 
+  std::vector<int> visited_indexes;
+  visited_indexes.reserve(1000);
+
   int start_index = start_pixel.y * width + start_pixel.x;
-  thread_visited[start_index] = 1;
+  local_visited[start_index] = 1;
+  visited_indexes.push_back(start_index);
   stack.push_back(start_index);
 
   while (!stack.empty()) {
@@ -151,23 +154,22 @@ Component voroshilov_v_convex_hull_components_omp::DepthComponentSearchInArea(Pi
         continue;
       }
       if (next_y < start_y) {
+        for (int index : visited_indexes) {
+          local_visited[index] = 0;
+        }
         return {};
       }
-
       int next_index = next_y * width + next_x;
-      if (thread_visited[next_index] == 1 || std::find(local_visited.begin(), local_visited.end(), next_index) != local_visited.end()) {
+      if (image.pixels[next_index].value != 1 || thread_visited[next_index] || local_visited[next_index]) {
         continue;
       }
-      if (image.pixels[next_index].value != 1) {
-        continue;
-      }
-
+      local_visited[next_index] = 1;
+      visited_indexes.push_back(next_index);
       stack.push_back(next_index);
-      local_visited.push_back(next_index);
     }
   }
 
-  for (int index : local_visited) {
+  for (int index : visited_indexes) {
     thread_visited[index] = 1;
   }
 
@@ -177,7 +179,8 @@ Component voroshilov_v_convex_hull_components_omp::DepthComponentSearchInArea(Pi
 std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsInArea(Image& image, int start_y, int end_y) {
   int height = image.height;
   int width = image.width;
-  std::vector<uint8_t> thread_visited(height * width);
+  std::vector<uint8_t> thread_visited(height * width, 0);
+  std::vector<uint8_t> local_visited(height * width, 0);
   
   std::vector<Component> local_components;
   local_components.reserve(1000);
@@ -191,7 +194,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsIn
       if (y >= start_y && image.GetPixel(y - 1, x).value == 1) {
         continue;
       }
-      Component component = DepthComponentSearchInArea(image.GetPixel(y, x), image, start_y, end_y, thread_visited);
+      Component component = DepthComponentSearchInArea(image.GetPixel(y, x), image, start_y, end_y, thread_visited, local_visited);
       if (!component.empty()) {
         local_components.push_back(std::move(component));
       }
