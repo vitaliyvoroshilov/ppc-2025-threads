@@ -176,7 +176,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
 
   auto end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double, std::milli> duration = end - start;
-  std::cout << "[OMP Image in FindComponents: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[OMP --- tmp_image: " << duration.count() << " ms]" << std::endl;
 
   start = std::chrono::high_resolution_clock::now();
 
@@ -217,7 +217,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
 
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
-  std::cout << "[OMP Distribution in FindComponents: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[OMP --- Distribution: " << duration.count() << " ms]" << std::endl;
 
   start = std::chrono::high_resolution_clock::now();
 
@@ -231,7 +231,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
 
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
-  std::cout << "[OMP Parallel in FindComponents: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[OMP --- Parallel: " << duration.count() << " ms]" << std::endl;
 
   start = std::chrono::high_resolution_clock::now();
 
@@ -252,7 +252,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
 
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
-  std::cout << "[OMP Insert in FindComponents: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[OMP --- Insert: " << duration.count() << " ms]" << std::endl;
 
   start = std::chrono::high_resolution_clock::now();
 
@@ -260,7 +260,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
 
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
-  std::cout << "[OMP MergeAreas in FindComponents: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[OMP --- MergeAreas: " << duration.count() << " ms]" << std::endl;
 
   return components;
 }
