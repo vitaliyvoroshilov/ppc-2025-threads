@@ -211,7 +211,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
     end_y[end_y.size() - 1] = height;
 
     for (int i = 0; i < num_threads; i++) {
-      index_offset[i] = (i * 100000) + 2;
+      index_offset[i] = (i * 10000) + 2;
     }
   }
 
