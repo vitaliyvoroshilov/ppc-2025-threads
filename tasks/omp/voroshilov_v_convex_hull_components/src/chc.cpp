@@ -244,8 +244,8 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
   {
     int thread_id = omp_get_thread_num();
     int local_height = base_height;
-    int local_start_y;
-    int local_end_y;
+    int local_start_y = 0;
+    int local_end_y = 0;
 
     if (thread_id < remainder) {
       local_height++;
@@ -257,7 +257,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
 
     borders[thread_id] = local_end_y;
 
-    int label_offset = thread_id * 100000 + 2;
+    int label_offset = (thread_id * 10000) + 2;
 
     num_components += FindComponentsInArea(labels, image, local_start_y, local_end_y, label_offset);
   }

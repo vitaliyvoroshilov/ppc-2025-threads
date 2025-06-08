@@ -85,19 +85,25 @@ std::vector<Component> voroshilov_v_convex_hull_components_stl::LabelsToComponen
 
   std::unordered_map<int, std::vector<int>> groups;
   groups.reserve(num_components);
-  for (int i = 0; i < n; ++i) {
+  for (int i = 0; i < n; i++) {
     int lab = labels[i];
-    if (lab > 1) groups[lab].push_back(i);
+    if (lab > 1) {
+      groups[lab].push_back(i);
+    }
   }
 
   std::vector<int> keys;
   keys.reserve(groups.size());
-  for (auto& kv : groups) keys.push_back(kv.first);
+  for (auto& kv : groups) {
+    keys.push_back(kv.first);
+  }
 
   std::vector<Component> components(keys.size());
 
-  unsigned num_threads = std::thread::hardware_concurrency();
-  if (num_threads == 0) num_threads = 4;
+  unsigned num_threads = ppc::util::GetPPCNumThreads();
+  if (num_threads == 0) {
+    num_threads = 4;
+  }
 
   auto worker = [&](size_t start, size_t end) {
     for (size_t idx = start; idx < end; ++idx) {
@@ -119,13 +125,15 @@ std::vector<Component> voroshilov_v_convex_hull_components_stl::LabelsToComponen
 
   size_t block = (keys.size() + num_threads - 1) / num_threads;
   size_t begin = 0;
-  for (unsigned t = 0; t < num_threads && begin < keys.size(); ++t) {
+  for (unsigned t = 0; t < num_threads && begin < keys.size(); t++) {
     size_t end = std::min(begin + block, keys.size());
     threads.emplace_back(worker, begin, end);
     begin = end;
   }
 
-  for (auto& th : threads) th.join();
+  for (auto& th : threads) {
+    th.join();
+  }
 
   return components;
 }
