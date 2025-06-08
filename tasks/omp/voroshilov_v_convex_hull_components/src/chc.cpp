@@ -176,7 +176,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
 
   auto end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double, std::milli> duration = end - start;
-  std::cout << "[OMP --- tmp_image: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[OMP ↓ tmp_image: " << duration.count() << " ms]" << std::endl;
 
   start = std::chrono::high_resolution_clock::now();
 
@@ -217,7 +217,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
 
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
-  std::cout << "[OMP --- Distribution: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[OMP ↓ Distribution: " << duration.count() << " ms]" << std::endl;
 
   start = std::chrono::high_resolution_clock::now();
 
@@ -231,7 +231,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
 
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
-  std::cout << "[OMP --- Parallel: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[OMP ↓ Parallel: " << duration.count() << " ms]" << std::endl;
 
   start = std::chrono::high_resolution_clock::now();
 
@@ -244,7 +244,6 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
   for (auto& v : thread_components) {
     components.insert(components.end(), v.begin(), v.end());
   }
-
   /*std::vector<Component> components;
   for (std::vector<Component>& vec : thread_components) {
     components.insert(components.end(), vec.begin(), vec.end());
@@ -252,7 +251,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
 
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
-  std::cout << "[OMP --- Insert: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[OMP ↓ Insert: " << duration.count() << " ms]" << std::endl;
 
   start = std::chrono::high_resolution_clock::now();
 
@@ -260,7 +259,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
 
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
-  std::cout << "[OMP --- MergeAreas: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[OMP ↓ MergeAreas: " << duration.count() << " ms]" << std::endl;
 
   return components;
 }

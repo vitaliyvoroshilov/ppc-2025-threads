@@ -68,7 +68,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_seq::FindComponents(I
   Image tmp_image(image);
   auto end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double, std::milli> duration = end - start;
-  std::cout << "[SEQ --- tmp_image: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[SEQ ↓ tmp_image: " << duration.count() << " ms]" << std::endl;
   start = std::chrono::high_resolution_clock::now();
 
   std::vector<Component> components;
@@ -84,7 +84,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_seq::FindComponents(I
   }
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
-  std::cout << "[SEQ --- DFS: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[SEQ ↓ DFS: " << duration.count() << " ms]" << std::endl;
 
   if (components.empty()) {
     return {};
