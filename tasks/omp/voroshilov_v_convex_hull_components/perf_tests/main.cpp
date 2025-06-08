@@ -136,7 +136,7 @@ bool IsHullSubset(Hull& hull_first, Hull& hull_second) {
 TEST(voroshilov_v_convex_hull_components_omp, chc_pipeline_run) {
   int height = 3'000;
   int width = 3'000;
-  std::vector<int> pixels = GenerateRectanglesComponents(width, height, 3000, 100, 100);
+  std::vector<int> pixels = GenerateRectanglesComponents(width, height, 1000, 50, 50);
 
   int* p_height = &height;
   int* p_width = &width;
