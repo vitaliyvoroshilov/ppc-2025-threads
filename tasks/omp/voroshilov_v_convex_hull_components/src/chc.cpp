@@ -143,7 +143,8 @@ void voroshilov_v_convex_hull_components_omp::UnionLabels(UnionFind& uf, std::ve
   }
 }
 
-void voroshilov_v_convex_hull_components_omp::MergeLabels(std::vector<int>& labels, Image& image, int num_threads, std::vector<int>& borders) {
+void voroshilov_v_convex_hull_components_omp::MergeLabels(std::vector<int>& labels, Image& image, int num_threads,
+                                                          std::vector<int>& borders) {
   int height = image.height;
   int width = image.width;
   int n = height * width;
@@ -253,13 +254,12 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
       local_start_y = thread_id * local_height + remainder;
     }
     local_end_y = local_start_y + local_height;
-    
+
     borders[thread_id] = local_end_y;
 
     int label_offset = thread_id * 100000 + 2;
 
-    num_components +=
-        FindComponentsInArea(labels, image, local_start_y, local_end_y, label_offset);
+    num_components += FindComponentsInArea(labels, image, local_start_y, local_end_y, label_offset);
   }
 
   end = std::chrono::high_resolution_clock::now();
