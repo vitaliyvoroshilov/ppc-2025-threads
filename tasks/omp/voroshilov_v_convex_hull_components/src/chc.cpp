@@ -89,10 +89,10 @@ void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::ve
                                                                          Image& image, int area_height,
                                                                          std::vector<int>& end_y) {
   UnionFind union_find;
-
+  
   int width = image.width;
   int height = image.height;
-
+  
   for (int endy : end_y) {
     int y = endy - 1;
     if (y != height - 1) {
@@ -102,6 +102,32 @@ void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::ve
     }
   }
 
+  std::vector<int> all_roots;
+  all_roots.reserve(components.size());
+  for (Component& comp : components) {
+    all_roots.push_back(union_find.FindRoot(comp[0].value));
+  }
+  std::sort(all_roots.begin(), all_roots.end());
+  all_roots.erase(std::unique(all_roots.begin(), all_roots.end()), all_roots.end());
+
+  std::unordered_map<int,int> root_to_indx;
+  for (int i = 0; i < (int)all_roots.size(); i++) {
+    root_to_indx[all_roots[i]] = i;
+  }
+  int merged_size = (int)all_roots.size();
+
+  std::vector<Component> merged(merged_size);
+
+  for (Component& comp : components) {
+    int root = union_find.FindRoot(comp[0].value);
+    int indx = root_to_indx[root];
+    Component& target = merged[indx];
+    size_t old_size = target.size();
+    target.resize(old_size + comp.size());
+    std::move(comp.begin(), comp.end(), target.begin() + old_size);
+  }
+
+/*  
   std::unordered_map<int, Component> merged_components;
   for (Component& component : components) {
     int new_id = union_find.FindRoot(component[0].value);
@@ -115,17 +141,18 @@ void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::ve
   for (auto& entry : merged_components) {
     components.push_back(entry.second);
   }
+*/
 }
 
-Component voroshilov_v_convex_hull_components_omp::DepthComponentSearchInArea(Pixel start_pixel, Image* tmp_image,
+Component voroshilov_v_convex_hull_components_omp::DepthComponentSearchInArea(Pixel start_pixel, Image& image,
                                                                               int index, int start_y, int end_y) {
   const int step_y[8] = {1, 1, 1, 0, 0, -1, -1, -1};  // Offsets by Y (up, stand, down)
   const int step_x[8] = {-1, 0, 1, -1, 1, -1, 0, 1};  // Offsets by X (left, stand, right)
   std::stack<Pixel> stack;
   std::vector<Pixel> component_pixels;
   stack.push(start_pixel);
-  tmp_image->GetPixel(start_pixel.y, start_pixel.x).value = index;                // Mark start pixel as visited
-  component_pixels.push_back(tmp_image->GetPixel(start_pixel.y, start_pixel.x));  // Add start pixel to component
+  image.GetPixel(start_pixel.y, start_pixel.x).value = index;                // Mark start pixel as visited
+  component_pixels.push_back(image.GetPixel(start_pixel.y, start_pixel.x));  // Add start pixel to component
 
   while (!stack.empty()) {
     Pixel current_pixel = stack.top();
@@ -133,11 +160,11 @@ Component voroshilov_v_convex_hull_components_omp::DepthComponentSearchInArea(Pi
     for (int i = 0; i < 8; i++) {
       int next_y = current_pixel.y + step_y[i];
       int next_x = current_pixel.x + step_x[i];
-      if (next_y >= start_y && next_y < end_y && next_x >= 0 && next_x < tmp_image->width &&
-          tmp_image->GetPixel(next_y, next_x) == 1) {
-        stack.push(tmp_image->GetPixel(next_y, next_x));
-        tmp_image->GetPixel(next_y, next_x).value = index;                // Mark neighbour pixel as visited
-        component_pixels.push_back(tmp_image->GetPixel(next_y, next_x));  // Add neighbour pixel to component
+      if (next_y >= start_y && next_y < end_y && next_x >= 0 && next_x < image.width &&
+          image.GetPixel(next_y, next_x) == 1) {
+        stack.push(image.GetPixel(next_y, next_x));
+        image.GetPixel(next_y, next_x).value = index;                // Mark neighbour pixel as visited
+        component_pixels.push_back(image.GetPixel(next_y, next_x));  // Add neighbour pixel to component
       }
     }
   }
@@ -147,15 +174,15 @@ Component voroshilov_v_convex_hull_components_omp::DepthComponentSearchInArea(Pi
   return component;
 }
 
-std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsInArea(Image& tmp_image, int start_y,
+std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsInArea(Image& image, int start_y,
                                                                                      int end_y, int index_offset) {
   std::vector<Component> components;
   int index = index_offset;  // unique index in this area
 
   for (int y = start_y; y < end_y; y++) {
-    for (int x = 0; x < tmp_image.width; x++) {
-      if (tmp_image.GetPixel(y, x) == 1) {
-        Component component = DepthComponentSearchInArea(tmp_image.GetPixel(y, x), &tmp_image, index, start_y, end_y);
+    for (int x = 0; x < image.width; x++) {
+      if (image.GetPixel(y, x) == 1) {
+        Component component = DepthComponentSearchInArea(image.GetPixel(y, x), image, index, start_y, end_y);
         components.push_back(component);
         index++;
       }
@@ -170,21 +197,11 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsIn
 }
 
 std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOMP(Image& image) {
-  auto start = std::chrono::high_resolution_clock::now();
-
-  Image tmp_image(image);
-
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double, std::milli> duration = end - start;
-  std::cout << "[OMP Image in FindComponents: " << duration.count() << " ms]" << std::endl;
-
-  start = std::chrono::high_resolution_clock::now();
-
   int num_threads = omp_get_max_threads();
 
   std::vector<std::vector<Component>> thread_components(num_threads);
 
-  int height = tmp_image.height;
+  int height = image.height;
 
   int area_height = height / num_threads;
   int remainder = height % num_threads;
@@ -215,52 +232,53 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
     }
   }
 
-  end = std::chrono::high_resolution_clock::now();
-  duration = end - start;
-  std::cout << "[OMP Distribution in FindComponents: " << duration.count() << " ms]" << std::endl;
-
-  start = std::chrono::high_resolution_clock::now();
+  auto start = std::chrono::high_resolution_clock::now();
 
 #pragma omp parallel
   {
     int thread_id = omp_get_thread_num();
 
     thread_components[thread_id] =
-        FindComponentsInArea(tmp_image, start_y[thread_id], end_y[thread_id], index_offset[thread_id]);
+        FindComponentsInArea(image, start_y[thread_id], end_y[thread_id], index_offset[thread_id]);
   }
 
-  end = std::chrono::high_resolution_clock::now();
-  duration = end - start;
-  std::cout << "[OMP Parallel in FindComponents: " << duration.count() << " ms]" << std::endl;
+  auto end = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double, std::milli> duration = end - start;
+  std::cout << "[OMP | parallel: " << duration.count() << " ms]" << std::endl;
 
   start = std::chrono::high_resolution_clock::now();
 
-  std::vector<Component> components;
-  size_t totalCount = 0;
-  for (auto& v : thread_components) {
-    totalCount += v.size();
-  }
-  components.reserve(totalCount);
-  for (auto& v : thread_components) {
-    components.insert(components.end(), v.begin(), v.end());
+  
+  std::vector<int> sizes(num_threads);
+  std::vector<int> offsets(num_threads + 1);
+  for (int i = 0; i < num_threads; i++) {
+    sizes[i] = (int)thread_components[i].size();
   }
 
-  /*std::vector<Component> components;
-  for (std::vector<Component>& vec : thread_components) {
-    components.insert(components.end(), vec.begin(), vec.end());
-  }*/
+  offsets[0] = 0;
+  for (int i = 0; i < num_threads; i++) {
+    offsets[i + 1] = offsets[i] + sizes[i];
+  }
+  
+  std::vector<Component> components(offsets[num_threads]);
+
+  for (int i = 0; i < num_threads; i++) {
+    std::vector<Component>& src = thread_components[i];
+    auto dst_it = components.begin() + offsets[i];
+    std::move(src.begin(), src.end(), dst_it);
+  }
 
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
-  std::cout << "[OMP Insert in FindComponents: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[OMP | insert: " << duration.count() << " ms]" << std::endl;
 
   start = std::chrono::high_resolution_clock::now();
 
-  MergeComponentsAcrossAreas(components, tmp_image, area_height, end_y);
+  MergeComponentsAcrossAreas(components, image, area_height, end_y);
 
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
-  std::cout << "[OMP MergeAreas in FindComponents: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[OMP | merge: " << duration.count() << " ms]" << std::endl;
 
   return components;
 }
