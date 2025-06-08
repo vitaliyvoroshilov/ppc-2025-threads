@@ -84,7 +84,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_seq::FindComponents(I
   }
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
-  std::cout << "[SEQ ↓ DFS: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[SEQ ↓ dfs: " << duration.count() << " ms]" << std::endl;
 
   if (components.empty()) {
     return {};

@@ -44,7 +44,7 @@ bool voroshilov_v_convex_hull_components_omp::ChcTaskOMP::RunImpl() {
 
   start = std::chrono::high_resolution_clock::now();
 
-  std::vector<Component> components = FindComponentsOMP(image);
+  std::vector<std::vector<Component>> threads_components = FindComponentsOMP(image);
 
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
@@ -52,7 +52,7 @@ bool voroshilov_v_convex_hull_components_omp::ChcTaskOMP::RunImpl() {
 
   start = std::chrono::high_resolution_clock::now();
 
-  hulls_out_ = QuickHullAllOMP(components);
+  hulls_out_ = QuickHullAllOMP(threads_components);
 
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;

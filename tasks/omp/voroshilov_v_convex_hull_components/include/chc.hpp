@@ -59,11 +59,11 @@ void CheckBoundaryPixels(UnionFind* union_find, Image& image, int y, int x);
 void MergeComponentsAcrossAreas(std::vector<Component>& components, Image& image, int area_height,
                                 std::vector<int>& end_y);
 
-Component DepthComponentSearchInArea(Pixel start_pixel, Image* tmp_image, int index, int start_y, int end_y);
+Component DepthComponentSearchInArea(Pixel start_pixel, Image& image, int index, int start_y, int end_y);
 
 std::vector<Component> FindComponentsInArea(Image& tmp_image, int start_y, int end_y, int index_offset);
 
-std::vector<Component> FindComponentsOMP(Image& image);
+std::vector<std::vector<Component>> FindComponentsOMP(Image& image);
 
 int CheckRotation(Pixel& first, Pixel& second, Pixel& third);
 
@@ -71,7 +71,7 @@ Pixel FindFarthestPixel(std::vector<Pixel>& pixels, LineSegment& line_segment);
 
 std::vector<Pixel> QuickHull(Component& component);
 
-std::vector<Hull> QuickHullAllOMP(std::vector<Component>& components);
+std::vector<Hull> QuickHullAllOMP(std::vector<std::vector<Component>>& threads_components);
 
 void PackHulls(std::vector<Hull>& hulls, int width, int height, int* hulls_indxs, int* pixels_indxs);
 
