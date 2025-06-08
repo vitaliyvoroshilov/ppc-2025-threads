@@ -60,9 +60,9 @@ void CheckBoundaryPixels(UnionFind* union_find, Image& image, int y, int x);
 void MergeComponentsAcrossAreas(std::vector<Component>& components, Image& image, int area_height,
                                 std::vector<int>& end_y);
 
-Component DepthComponentSearchInArea(Pixel start_pixel, Image& image, int start_y, int end_y, std::vector<uint8_t>& thread_visited, std::vector<uint8_t>& local_visited);
+Component DepthComponentSearchInArea(Pixel start_pixel, Image& image, int area_top, std::vector<uint8_t>& thread_visited, std::vector<uint8_t>& local_visited);
 
-std::vector<Component> FindComponentsInArea(Image& image, int start_y, int end_y);
+std::vector<Component> FindComponentsInArea(Image& image, int area_top, int area_bottom);
 
 std::vector<std::vector<Component>> FindComponentsOMP(Image& image);
 
