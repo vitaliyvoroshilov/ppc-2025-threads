@@ -117,55 +117,65 @@ void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::ve
   }
 }
 
-Component voroshilov_v_convex_hull_components_omp::DepthComponentSearchInArea(Pixel start_pixel, Image& image,
-                                                                              int index, int start_y, int end_y) {
-  const int step_y[9] = { 1, 1, 1, 0, 0, 0, -1, -1, -1};  // Offsets by Y (up, stand, down)
-  const int step_x[9] = { -1, 0, 1, -1, 0, 1, -1, 0, 1};  // Offsets by X (left, stand, right)
+Component voroshilov_v_convex_hull_components_omp::DepthComponentSearchInArea(Pixel start_pixel, Image& local_image,
+                                                                              int start_y, int end_y) {
+  const int step_y[8] = { 1, 1, 1, 0, 0, -1, -1, -1};  // Offsets by Y (up, stand, down)
+  const int step_x[8] = { -1, 0, 1, -1, 1, -1, 0, 1};  // Offsets by X (left, stand, right)
+  const int height = local_image.height;
+  const int width = local_image.width;
+
   std::stack<Pixel> pixels_stack;
-  std::stack<int> steps_stack;
-  std::vector<Pixel> component_pixels;
-  pixels_stack.push(start_pixel);
-  steps_stack.push(4);
-  //tmp_image->GetPixel(start_pixel.y, start_pixel.x).value = index;                // Mark start pixel as visited
-  component_pixels.push_back(image.GetPixel(start_pixel.y, start_pixel.x));  // Add start pixel to component
+  Component component;
+  
+  //Pixel& start_p = local_image.GetPixel(start_pixel.y, start_pixel.x);
+  local_image.GetPixel(start_pixel.y, start_pixel.x).value = 0;                // Mark start pixel as visited
+  pixels_stack.push(local_image.GetPixel(start_pixel.y, start_pixel.x));
+  component.push_back(local_image.GetPixel(start_pixel.y, start_pixel.x));  // Add start pixel to component
 
   while (!pixels_stack.empty()) {
     Pixel current_pixel = pixels_stack.top();
     pixels_stack.pop();
-    int last_step = steps_stack.top();
-    steps_stack.pop();
-    for (int i = 0; i != (8 - last_step) && i < 9; i++) {
+    for (int i = 0; i < 8; i++) {
       int next_y = current_pixel.y + step_y[i];
       int next_x = current_pixel.x + step_x[i];
-      if (next_y < image.height && next_x >= 0 && next_x < image.width && image.GetPixel(next_y, next_x) == 1) {
-        if (next_y < start_y) {
-          return {};
-        }
-        pixels_stack.push(image.GetPixel(next_y, next_x));
-        steps_stack.push(i);
-        //tmp_image->GetPixel(next_y, next_x).value = index;                // Mark neighbour pixel as visited
-        component_pixels.push_back(image.GetPixel(next_y, next_x));  // Add neighbour pixel to component
+
+      if (next_y < 0 || next_y >= height || next_x < 0 || next_x >= width) {
+        continue;
       }
+
+      //Pixel& next_pixel = local_image.GetPixel(next_y, next_x);
+
+      if (local_image.GetPixel(next_y, next_x).value != 1) {
+        continue;
+      }
+
+      if (next_y < start_y) {
+        for (Pixel& p : component) {
+          local_image.GetPixel(p.y, p.x).value = 1;
+        }
+        return {};
+      }
+      local_image.GetPixel(next_y, next_x).value = 0;                // Mark neighbour pixel as visited
+      pixels_stack.push(local_image.GetPixel(next_y, next_x));
+      component.push_back(local_image.GetPixel(next_y, next_x));  // Add neighbour pixel to component
     }
   }
 
-  Component component(component_pixels);
-
-  return component;
+  return Component(std::move(component));
 }
 
-std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsInArea(Image& image, int start_y,
-                                                                                     int end_y, int index_offset) {
+std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsInArea(Image& local_image, int start_y,
+                                                                                     int end_y) {
   std::vector<Component> components;
-  int index = index_offset;  // unique index in this area
 
   for (int y = start_y; y < end_y; y++) {
-    for (int x = 0; x < image.width; x++) {
-      if (image.GetPixel(y, x) == 1) {
-        Component component = DepthComponentSearchInArea(image.GetPixel(y, x), image, index, start_y, end_y);
+    for (int x = 0; x < local_image.width; x++) {
+      if (y > start_y && local_image.GetPixel(y - 1, x).value == 1)
+        continue;
+      if (local_image.GetPixel(y, x) == 1) {
+        Component component = DepthComponentSearchInArea(local_image.GetPixel(y, x), local_image, start_y, end_y);
         if (!component.empty()) {
-          components.push_back(component);
-          index++;
+          components.push_back(std::move(component));
         }
       }
     }
@@ -179,15 +189,17 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsIn
 }
 
 std::vector<std::vector<Component>> voroshilov_v_convex_hull_components_omp::FindComponentsOMP(Image& image) {
+  int num_threads = omp_get_max_threads();
+
   auto start = std::chrono::high_resolution_clock::now();
+
+  std::vector<Image> local_images(num_threads, image);
 
   auto end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double, std::milli> duration = end - start;
-  std::cout << "[OMP ↓ tmp_image: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[OMP | local_images: " << duration.count() << " ms]" << std::endl;
 
   start = std::chrono::high_resolution_clock::now();
-
-  int num_threads = omp_get_max_threads();
 
   std::vector<std::vector<Component>> threads_components(num_threads);
 
@@ -216,29 +228,25 @@ std::vector<std::vector<Component>> voroshilov_v_convex_hull_components_omp::Fin
       end_y[i] = start_y[i + 1];
     }
     end_y[end_y.size() - 1] = height;
-
-    for (int i = 0; i < num_threads; i++) {
-      index_offset[i] = (i * 100000) + 2;
-    }
   }
 
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
-  std::cout << "[OMP ↓ distribution: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[OMP | distribution: " << duration.count() << " ms]" << std::endl;
 
   start = std::chrono::high_resolution_clock::now();
 
 #pragma omp parallel
   {
-    int thread_id = omp_get_thread_num();
+    int t = omp_get_thread_num();
 
-    threads_components[thread_id] =
-        FindComponentsInArea(image, start_y[thread_id], end_y[thread_id], index_offset[thread_id]);
+    threads_components[t] =
+        FindComponentsInArea(local_images[t], start_y[t], end_y[t]);
   }
 
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
-  std::cout << "[OMP ↓ parallel: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[OMP | parallel: " << duration.count() << " ms]" << std::endl;
 
   return threads_components;
 }
@@ -326,13 +334,13 @@ std::vector<Hull> voroshilov_v_convex_hull_components_omp::QuickHullAllOMP(std::
     return {};
   }
 
-  size_t num_threads = (size_t)omp_get_max_threads();
+  int num_threads = omp_get_max_threads();
   std::vector<std::vector<Hull>> threads_hulls(num_threads);
 
   auto start = std::chrono::high_resolution_clock::now();
 
 #pragma omp parallel for schedule(dynamic)
-  for (size_t t = 0; t < num_threads; t++) {
+  for (int t = 0; t < num_threads; t++) {
     std::vector<Component>& local_components = threads_components[t];
     for (Component& comp : local_components) {
       Hull hull = QuickHull(comp);
@@ -342,7 +350,7 @@ std::vector<Hull> voroshilov_v_convex_hull_components_omp::QuickHullAllOMP(std::
 
   auto end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double, std::milli> duration = end - start;
-  std::cout << "[OMP ↓ cycle: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[OMP | hulls: " << duration.count() << " ms]" << std::endl;
   start = std::chrono::high_resolution_clock::now();
 
   std::vector<Hull> hulls;
@@ -357,7 +365,7 @@ std::vector<Hull> voroshilov_v_convex_hull_components_omp::QuickHullAllOMP(std::
 
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
-  std::cout << "[OMP ↓ insert: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[OMP | insert: " << duration.count() << " ms]" << std::endl;
 
   return hulls;
 }

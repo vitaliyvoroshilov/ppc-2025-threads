@@ -40,7 +40,7 @@ bool voroshilov_v_convex_hull_components_seq::ChcTaskSequential::RunImpl() {
 
   auto end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double, std::milli> duration = end - start;
-  std::cout << "[SEQ - Image: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[SEQ Image: " << duration.count() << " ms]" << std::endl;
 
   start = std::chrono::high_resolution_clock::now();
 
@@ -48,7 +48,7 @@ bool voroshilov_v_convex_hull_components_seq::ChcTaskSequential::RunImpl() {
 
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
-  std::cout << "[SEQ - FindComponents: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[SEQ FindComponents: " << duration.count() << " ms]" << std::endl;
 
   start = std::chrono::high_resolution_clock::now();
 
@@ -56,7 +56,7 @@ bool voroshilov_v_convex_hull_components_seq::ChcTaskSequential::RunImpl() {
 
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
-  std::cout << "[SEQ - QuickHullAll: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[SEQ QuickHullAll: " << duration.count() << " ms]" << std::endl;
 
   return true;
 }
