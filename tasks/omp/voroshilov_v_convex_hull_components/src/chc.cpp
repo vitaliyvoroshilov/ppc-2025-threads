@@ -37,29 +37,38 @@ Pixel& Image::GetPixel(int y, int x) { return pixels[(y * width) + x]; }
 
 LineSegment::LineSegment(Pixel& a_param, Pixel& b_param) : a(a_param), b(b_param) {}
 
+UnionFind::UnionFind(int n) {
+  roots.reserve(n);
+  roots[0] = 0;
+  roots[1] = 0;
+  ranks[0] = 0;
+  ranks[1] = 0;
+  for (int i = 2; i < n; i++) {
+    roots[i] = i;
+    ranks[i] = 1;
+  }
+}
+
 int UnionFind::FindRoot(int x) {
-  if (roots.find(x) == roots.end()) {
-    roots[x] = x;
-    ranks[x] = 1;
+  while (roots[x] != x) {
+    roots[x] = roots[roots[x]];
+    x = roots[x];
   }
-  if (roots[x] != x) {
-    roots[x] = FindRoot(roots[x]);
-  }
-  return roots[x];
+  return x;
 }
 
 void UnionFind::Union(int x, int y) {
   int root_x = FindRoot(x);
   int root_y = FindRoot(y);
-  if (root_x != root_y) {
-    if (ranks[root_x] > ranks[root_y]) {
-      roots[root_y] = root_x;
-    } else if (ranks[root_x] < ranks[root_y]) {
-      roots[root_x] = root_y;
-    } else {
-      roots[root_y] = root_x;
-      ranks[root_x]++;
-    }
+  if (root_x == root_y) {
+    return;
+  }
+  if (ranks[root_x] < ranks[root_y]) {
+    std::swap(root_x, root_y);
+  }
+  roots[root_y] = root_x;
+  if (ranks[root_x] == ranks[root_y]) {
+    ranks[root_x]++;
   }
 }
 
@@ -88,7 +97,8 @@ void voroshilov_v_convex_hull_components_omp::CheckBoundaryPixels(UnionFind* uni
 void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::vector<Component>& components,
                                                                          Image& image, int area_height,
                                                                          std::vector<int>& end_y) {
-  UnionFind union_find;
+  int num_threads = omp_get_max_threads();
+  UnionFind union_find(num_threads * 1000 + 2);
   
   int width = image.width;
   int height = image.height;
@@ -102,46 +112,70 @@ void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::ve
     }
   }
 
-  std::vector<int> all_roots;
-  all_roots.reserve(components.size());
-  for (Component& comp : components) {
-    all_roots.push_back(union_find.FindRoot(comp[0].value));
+  int n = (int)components.size();
+  std::vector<int> all_roots(n);
+  all_roots.reserve(n);
+  for (int i = 0; i < n; i++) {
+    all_roots[i] = union_find.FindRoot(components[i][0].value);
   }
-  std::sort(all_roots.begin(), all_roots.end());
-  all_roots.erase(std::unique(all_roots.begin(), all_roots.end()), all_roots.end());
+  
+  std::vector<int> roots_unique = all_roots;
+  std::sort(roots_unique.begin(), roots_unique.end());
+  roots_unique.erase(std::unique(roots_unique.begin(), roots_unique.end()), roots_unique.end());
+  int r = roots_unique.size();
 
   std::unordered_map<int,int> root_to_indx;
-  for (int i = 0; i < (int)all_roots.size(); i++) {
-    root_to_indx[all_roots[i]] = i;
+  root_to_indx.reserve(r);
+  for (int i = 0; i < r; i++) {
+    root_to_indx[roots_unique[i]] = i;
   }
-  int merged_size = (int)all_roots.size();
 
-  std::vector<Component> merged(merged_size);
+  std::vector<size_t> sizes(r, 0);
+  for (int i = 0; i < n; i++) {
+    int indx = root_to_indx[all_roots[i]];
+    sizes[indx] += components[i].size();
+  }
 
-  for (Component& comp : components) {
-    int root = union_find.FindRoot(comp[0].value);
-    int indx = root_to_indx[root];
+  std::vector<Component> merged(r);
+  for (int i = 0; i < r; i++) {
+    merged.reserve(sizes[i]);
+  }
+
+  for (int i = 0; i < n; i++) {
+    int indx = root_to_indx[all_roots[i]];
     Component& target = merged[indx];
-    size_t old_size = target.size();
-    target.resize(old_size + comp.size());
-    std::move(comp.begin(), comp.end(), target.begin() + old_size);
-  }
-
-/*  
-  std::unordered_map<int, Component> merged_components;
-  for (Component& component : components) {
-    int new_id = union_find.FindRoot(component[0].value);
-    if (merged_components.find(new_id) == merged_components.end()) {
-      merged_components[new_id] = Component();
+    for (Pixel& p : components[i]) {
+      target.push_back(p);
     }
-    merged_components[new_id].insert(merged_components[new_id].end(), component.begin(), component.end());
   }
 
-  components.clear();
-  for (auto& entry : merged_components) {
-    components.push_back(entry.second);
+  components = std::move(merged);
+
+}
+
+std::vector<Component> voroshilov_v_convex_hull_components_omp::CombineThreadsComponents(std::vector<std::vector<Component>>& threads_components) {
+  int num_threads = (int)threads_components.size();
+
+  std::vector<int> sizes(num_threads);
+  std::vector<int> offsets(num_threads + 1);
+  for (int i = 0; i < num_threads; i++) {
+    sizes[i] = (int)threads_components[i].size();
   }
-*/
+
+  offsets[0] = 0;
+  for (int i = 0; i < num_threads; i++) {
+    offsets[i + 1] = offsets[i] + sizes[i];
+  }
+  
+  std::vector<Component> components(offsets[num_threads]);
+
+  for (int i = 0; i < num_threads; i++) {
+    std::vector<Component>& src = threads_components[i];
+    auto dst_it = components.begin() + offsets[i];
+    std::move(src.begin(), src.end(), dst_it);
+  }
+
+  return components;
 }
 
 Component voroshilov_v_convex_hull_components_omp::DepthComponentSearchInArea(Pixel start_pixel, Image& image,
@@ -199,7 +233,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsIn
 std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOMP(Image& image) {
   int num_threads = omp_get_max_threads();
 
-  std::vector<std::vector<Component>> thread_components(num_threads);
+  std::vector<std::vector<Component>> threads_components(num_threads);
 
   int height = image.height;
 
@@ -228,7 +262,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
     end_y[end_y.size() - 1] = height;
 
     for (int i = 0; i < num_threads; i++) {
-      index_offset[i] = (i * 100000) + 2;
+      index_offset[i] = (i * 1000) + 2;
     }
   }
 
@@ -238,7 +272,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
   {
     int thread_id = omp_get_thread_num();
 
-    thread_components[thread_id] =
+    threads_components[thread_id] =
         FindComponentsInArea(image, start_y[thread_id], end_y[thread_id], index_offset[thread_id]);
   }
 
@@ -248,25 +282,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
 
   start = std::chrono::high_resolution_clock::now();
 
-  
-  std::vector<int> sizes(num_threads);
-  std::vector<int> offsets(num_threads + 1);
-  for (int i = 0; i < num_threads; i++) {
-    sizes[i] = (int)thread_components[i].size();
-  }
-
-  offsets[0] = 0;
-  for (int i = 0; i < num_threads; i++) {
-    offsets[i + 1] = offsets[i] + sizes[i];
-  }
-  
-  std::vector<Component> components(offsets[num_threads]);
-
-  for (int i = 0; i < num_threads; i++) {
-    std::vector<Component>& src = thread_components[i];
-    auto dst_it = components.begin() + offsets[i];
-    std::move(src.begin(), src.end(), dst_it);
-  }
+  std::vector<Component> components = CombineThreadsComponents(threads_components);
 
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
