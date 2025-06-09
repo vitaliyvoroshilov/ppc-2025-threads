@@ -42,17 +42,9 @@ Pixel& Image::GetPixel(int y, int x) { return pixels[(y * width) + x]; }
 LineSegment::LineSegment(Pixel& a_param, Pixel& b_param) : a(a_param), b(b_param) {}
 
 UnionFind::UnionFind(int n) {
-  roots.reserve(n);
-  ranks.reserve(n);
-  if (n > 0) {
-    roots[0] = 0;
-    ranks[0] = 0;
-  }
-  if (n > 1) {
-    roots[1] = 0;
-    ranks[1] = 0;
-  }
-  for (int i = 2; i < n; i++) {
+  roots.resize(n);
+  ranks.resize(n);
+  for (int i = 0; i < n; i++) {
     roots[i] = i;
     ranks[i] = 1;
   }
