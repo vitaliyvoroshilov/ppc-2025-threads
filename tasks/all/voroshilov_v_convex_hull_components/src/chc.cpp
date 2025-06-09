@@ -10,9 +10,9 @@
 #include <cstddef>
 #include <iterator>
 #include <stack>
-#include <unordered_map>
 #include <utility>
 #include <vector>
+#include <iostream>
 
 using namespace voroshilov_v_convex_hull_components_all;
 
