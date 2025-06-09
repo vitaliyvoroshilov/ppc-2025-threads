@@ -16,7 +16,6 @@
 #include <iostream>
 #include <chrono>
 
-
 using namespace voroshilov_v_convex_hull_components_all;
 
 Pixel::Pixel(int y_param, int x_param) : y(y_param), x(x_param), value(0) {}
@@ -302,8 +301,7 @@ std::vector<std::pair<int, int>> voroshilov_v_convex_hull_components_all::GetLoc
   std::vector<std::pair<int, int>> local_equis;
   int local_height = (int)local_pixels.size() / width;
 
-  if (rank > 0 && local_height > 0) {
-
+  if (rank > 0) {
     std::vector<int> row_send(width);
     std::vector<int> row_recv(width);
 
@@ -320,7 +318,7 @@ std::vector<std::pair<int, int>> voroshilov_v_convex_hull_components_all::GetLoc
     }
   }
 
-  if (rank + 1 < world.size() && local_height > 0) {
+  if (rank + 1 < world.size()) {
     std::vector<int> row_send(width);
     std::vector<int> row_recv(width);
 
@@ -340,35 +338,25 @@ std::vector<std::pair<int, int>> voroshilov_v_convex_hull_components_all::GetLoc
   return local_equis;
 }
 
-void voroshilov_v_convex_hull_components_all::RemapLabels(boost::mpi::communicator world, std::vector<std::vector<std::pair<int, int>>>& all_equis, std::vector<Component>& local_components) {
+std::vector<int> voroshilov_v_convex_hull_components_all::GetMapLabels(std::vector<std::vector<std::pair<int, int>>>& all_equis) {
   std::vector<int> map_labels;
-
-  if (world.rank() == 0) {
-    int max_label = 0;
-    for (auto& local_equis : all_equis) {
-      for (auto& pair : local_equis) {
-        max_label = std::max({max_label, pair.first, pair.second});
-      }
-    }
-    UnionFind uf(max_label + 1);
-    for (auto& local_equis : all_equis) {
-      for (auto& pair : local_equis) {
-        uf.Union(pair.first, pair.second);
-      }
-    }
-    map_labels.resize(max_label + 1);
-    for (int L = 0; L <= max_label; L++) {
-      map_labels[L] = uf.FindRoot(L);
+  int max_label = 0;
+  for (auto& local_equis : all_equis) {
+    for (auto& pair : local_equis) {
+      max_label = std::max({max_label, pair.first, pair.second});
     }
   }
-
-  boost::mpi::broadcast(world, map_labels, 0);
-
-  for (Component& comp : local_components) {
-    for (Pixel& p : comp) {
-      p.value = map_labels[p.value];
+  UnionFind uf(max_label + 1);
+  for (auto& local_equis : all_equis) {
+    for (auto& pair : local_equis) {
+      uf.Union(pair.first, pair.second);
     }
   }
+  map_labels.resize(max_label + 1);
+  for (int L = 0; L <= max_label; L++) {
+    map_labels[L] = uf.FindRoot(L);
+  }
+  return map_labels;
 }
 
 std::vector<Component> voroshilov_v_convex_hull_components_all::SendComponentsToOwners(boost::mpi::communicator world, std::vector<Component>& local_components) {
@@ -531,17 +519,26 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMP
   std::vector<std::vector<std::pair<int, int>>> all_equis;
   boost::mpi::gather(world, local_equis, all_equis, 0);
 
-  RemapLabels(world, all_equis, local_components);
+  std::vector<int> map_labels;
+  if (rank == 0) {
+    map_labels = GetMapLabels(all_equis);
+  }
 
-  std::vector<Component> local_result_components = SendComponentsToOwners(world, local_components);
+  boost::mpi::broadcast(world, map_labels, 0);
 
-  //std::vector<Component> local_full_components = SendExtraComponents(world, start_y[rank], end_y[rank], local_components);
+  for (Component& comp : local_components) {
+    for (Pixel& p : comp) {
+      p.value = map_labels[p.value];
+    }
+  }
+
+  std::vector<Component> local_full_components = SendComponentsToOwners(world, local_components);
 
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
   std::cout << "[ALL <" << world.rank() << "> SendExtraComponents: " << duration.count() << " ms]" << std::endl;
   
-  return local_result_components;
+  return local_full_components;
 }
 
 int voroshilov_v_convex_hull_components_all::CheckRotation(Pixel& first, Pixel& second, Pixel& third) {
