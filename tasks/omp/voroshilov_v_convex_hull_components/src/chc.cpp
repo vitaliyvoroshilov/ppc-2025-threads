@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <atomic>
 
 using namespace voroshilov_v_convex_hull_components_omp;
 
@@ -121,7 +122,8 @@ void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::ve
   std::vector<int> all_roots;
   all_roots.reserve(n);
   for (int i = 0; i < n; i++) {
-    all_roots[i] = union_find.FindRoot(components[i][0].value);
+    int label = components[i][0].value;
+    all_roots.push_back(union_find.FindRoot(label));
   }
   
   std::vector<int> roots_unique = all_roots;
@@ -131,7 +133,6 @@ void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::ve
 
   int max_root = roots_unique.back();
   std::vector<int> root_to_indx(max_root + 1, -1);
-  root_to_indx.reserve(r);
   for (int i = 0; i < r; i++) {
     root_to_indx[roots_unique[i]] = i;
   }
@@ -142,17 +143,34 @@ void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::ve
     sizes[indx] += components[i].size();
   }
 
-  std::vector<Component> merged(r);
+  std::vector<size_t> offsets(r + 1, 0);
   for (int i = 0; i < r; i++) {
-    merged[i].reserve(sizes[i]);
+    offsets[i + 1] = offsets[i] + sizes[i];
+  }
+  size_t s = offsets[r];
+
+  std::vector<Pixel> all_pixels(s);
+
+  std::vector<std::atomic<size_t>> cursor(r);
+  for (int i = 0; i < r; i++) {
+    cursor[i].store(offsets[i], std::memory_order_relaxed);
   }
 
+#pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < n; i++) {
-    int indx = root_to_indx[all_roots[i]];
-    Component& target = merged[indx];
-    for (Pixel& p : components[i]) {
-      target.push_back(p);
+    int b = root_to_indx[all_roots[i]];
+    Component& comp = components[i];
+    for (Pixel& p : comp) {
+      size_t pos = cursor[b].fetch_add(1, std::memory_order_relaxed);
+      all_pixels[pos] = p;
     }
+  }
+
+  std::vector<Component> merged(r);
+  for (int i = 0; i < r; i++) {
+    size_t start = offsets[i];
+    size_t end = offsets[i + 1];
+    merged[i].assign(all_pixels.begin() + start, all_pixels.begin() + end);
   }
 
   components = std::move(merged);
