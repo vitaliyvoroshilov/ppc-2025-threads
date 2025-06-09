@@ -300,7 +300,10 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsOM
 
 std::vector<std::pair<int, int>> voroshilov_v_convex_hull_components_all::GetLocalEquis(boost::mpi::communicator world, int rank, int width, std::vector<int>& local_pixels) {
   std::vector<std::pair<int, int>> local_equis;
-  if (rank > 0) {
+  int local_height = (int)local_pixels.size() / width;
+
+  if (rank > 0 && local_height > 0) {
+
     std::vector<int> row_send(width);
     std::vector<int> row_recv(width);
 
@@ -317,11 +320,11 @@ std::vector<std::pair<int, int>> voroshilov_v_convex_hull_components_all::GetLoc
     }
   }
 
-  if (rank + 1 < world.size()) {
+  if (rank + 1 < world.size() && local_height > 0) {
     std::vector<int> row_send(width);
     std::vector<int> row_recv(width);
 
-    std::copy_n(local_pixels.data(), width, row_send.begin());
+    std::copy_n(local_pixels.data() + (local_height - 1) * width, width, row_send.begin());
     world.recv(rank + 1, 0, row_recv);
     world.send(rank + 1, 1, row_send);
 
