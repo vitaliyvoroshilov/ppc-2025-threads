@@ -426,6 +426,12 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::SendExtraCompone
     }
   }
 
+  int R = world.rank(), P = world.size();
+  std::ostringstream oss;
+  oss << "[R="<<R<<"] Enter SendExtra: local_components="<<local_components.size();
+  oss << " from_up="<< (rank>0 ? from_up.size() : 0) << "\n";
+  std::cerr << oss.str();
+
   int loc_size = (int)local_components.size();
   int up_size = (int)from_up.size();
 
@@ -477,6 +483,21 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::SendExtraCompone
       to_send.push_back(std::move(comp));
     }
   }
+
+  std::ostringstream oss2;
+  oss2 << "[R="<<R<<"] to_keep="<<to_keep.size()
+      << " to_send="<<to_send.size()<<"\n";
+  for (int i = 0; i < (int)to_keep.size(); ++i)
+    oss2<<"  keep["<<i<<"] root_y=[" 
+        << to_keep[i].front().y << ".." 
+        << to_keep[i].back().y << "] label=" 
+        << to_keep[i].front().value << "\n";
+  for (int i = 0; i < (int)to_send.size(); ++i)
+    oss2<<"  send["<<i<<"] root_y=[" 
+        << to_send[i].front().y << ".." 
+        << to_send[i].back().y << "] label=" 
+        << to_send[i].front().value << "\n";
+  std::cerr<<oss2.str();
 
   if (rank + 1 < num_procs) {
     world.send(rank + 1, 2, to_send);
