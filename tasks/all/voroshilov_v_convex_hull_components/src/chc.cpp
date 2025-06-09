@@ -431,7 +431,6 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::SendExtraCompone
     for (Pixel& p : comp) {
       if (p.y == start_y - 1) {
         for (int dx = -1; dx <= 1; dx++) {
-          std::cout << std::endl << "CHEKING X=" << p.x + dx << std::endl;
           auto it = boundary_map.find(p.x + dx);
           if (it != boundary_map.end()) {
             auto& dst = local_components[it->second];
@@ -439,6 +438,9 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::SendExtraCompone
             merged = true;
             break;
           }
+        }
+        if (merged) {
+          break;
         }
       }
     }
