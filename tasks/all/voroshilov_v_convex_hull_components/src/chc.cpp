@@ -414,6 +414,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::SendExtraCompone
   std::vector<Component> from_up;
   if (rank > 0) {
     world.recv(rank - 1, 2, from_up);
+    std::cout << std::endl << rank << " received " << from_up.size() << " components, start_y = " << start_y << std::endl;
   }
 
   std::unordered_map<int, int> boundary_map;
@@ -428,13 +429,16 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::SendExtraCompone
   for (Component& comp : from_up) {
     bool merged = false;
     for (Pixel& p : comp) {
-      if (p.y == start_y) {
-        auto it = boundary_map.find(p.x);
-        if (it != boundary_map.end()) {
-          auto& dst = local_components[it->second];
-          dst.insert(dst.end(), std::make_move_iterator(comp.begin()), std::make_move_iterator(comp.end()));
-          merged = true;
-          break;
+      if (p.y == start_y - 1) {
+        for (int dx = -1; dx <= 1; dx++) {
+          std::cout << std::endl << "CHEKING X=" << p.x + dx << std::endl;
+          auto it = boundary_map.find(p.x + dx);
+          if (it != boundary_map.end()) {
+            auto& dst = local_components[it->second];
+            dst.insert(dst.end(), std::make_move_iterator(comp.begin()), std::make_move_iterator(comp.end()));
+            merged = true;
+            break;
+          }
         }
       }
     }
@@ -539,6 +543,17 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMP
   std::cout << "[ALL <" << world.rank() << "> FindComponentsOMP: " << duration.count() << " ms]" << std::endl;
   start = std::chrono::high_resolution_clock::now();
 
+  int y_offset = start_y[rank];
+  for (Component& comp : local_components) {
+    for (Pixel& p : comp) {
+      p.y += y_offset;
+    }
+  }
+
+  end = std::chrono::high_resolution_clock::now();
+  duration = end - start;
+  std::cout << "[ALL <" << world.rank() << "> OffsetImage: " << duration.count() << " ms]" << std::endl;
+
 /*
   std::vector<std::pair<int,int>> local_equis = GetLocalEquis(world, rank, width, local_pixels);
 
@@ -570,7 +585,6 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMP
 
   std::cout << std::endl << world.rank() << " Ended SendComponentsToOwners" << std::endl;
 */
-
   std::vector<Component> local_full_components = SendExtraComponents(world, start_y[rank], end_y[rank], local_components);
 
   end = std::chrono::high_resolution_clock::now();
