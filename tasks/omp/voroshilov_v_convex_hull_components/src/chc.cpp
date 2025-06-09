@@ -39,10 +39,15 @@ LineSegment::LineSegment(Pixel& a_param, Pixel& b_param) : a(a_param), b(b_param
 
 UnionFind::UnionFind(int n) {
   roots.reserve(n);
-  roots[0] = 0;
-  roots[1] = 0;
-  ranks[0] = 0;
-  ranks[1] = 0;
+  ranks.reserve(n);
+  if (n > 0) {
+    roots[0] = 0;
+    ranks[0] = 0;
+  }
+  if (n > 1) {
+    roots[1] = 0;
+    ranks[1] = 0;
+  }
   for (int i = 2; i < n; i++) {
     roots[i] = i;
     ranks[i] = 1;
@@ -98,7 +103,7 @@ void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::ve
                                                                          Image& image, int area_height,
                                                                          std::vector<int>& end_y) {
   int num_threads = omp_get_max_threads();
-  UnionFind union_find(num_threads * 1000 + 2);
+  UnionFind union_find((num_threads * 1000) + 3);
   
   int width = image.width;
   int height = image.height;
@@ -113,7 +118,7 @@ void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::ve
   }
 
   int n = (int)components.size();
-  std::vector<int> all_roots(n);
+  std::vector<int> all_roots;
   all_roots.reserve(n);
   for (int i = 0; i < n; i++) {
     all_roots[i] = union_find.FindRoot(components[i][0].value);
@@ -122,9 +127,10 @@ void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::ve
   std::vector<int> roots_unique = all_roots;
   std::sort(roots_unique.begin(), roots_unique.end());
   roots_unique.erase(std::unique(roots_unique.begin(), roots_unique.end()), roots_unique.end());
-  int r = roots_unique.size();
+  int r = (int)roots_unique.size();
 
-  std::unordered_map<int,int> root_to_indx;
+  int max_root = roots_unique.back();
+  std::vector<int> root_to_indx(max_root + 1, -1);
   root_to_indx.reserve(r);
   for (int i = 0; i < r; i++) {
     root_to_indx[roots_unique[i]] = i;
@@ -138,7 +144,7 @@ void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::ve
 
   std::vector<Component> merged(r);
   for (int i = 0; i < r; i++) {
-    merged.reserve(sizes[i]);
+    merged[i].reserve(sizes[i]);
   }
 
   for (int i = 0; i < n; i++) {
@@ -150,7 +156,6 @@ void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::ve
   }
 
   components = std::move(merged);
-
 }
 
 std::vector<Component> voroshilov_v_convex_hull_components_omp::CombineThreadsComponents(std::vector<std::vector<Component>>& threads_components) {
