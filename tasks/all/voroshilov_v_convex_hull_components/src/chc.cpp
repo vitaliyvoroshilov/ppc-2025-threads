@@ -39,29 +39,43 @@ Pixel& Image::GetPixel(int y, int x) { return pixels[(y * width) + x]; }
 
 LineSegment::LineSegment(Pixel& a_param, Pixel& b_param) : a(a_param), b(b_param) {}
 
+UnionFind::UnionFind(int n) {
+  roots.reserve(n);
+  ranks.reserve(n);
+  if (n > 0) {
+    roots[0] = 0;
+    ranks[0] = 0;
+  }
+  if (n > 1) {
+    roots[1] = 0;
+    ranks[1] = 0;
+  }
+  for (int i = 2; i < n; i++) {
+    roots[i] = i;
+    ranks[i] = 1;
+  }
+}
+
 int UnionFind::FindRoot(int x) {
-  if (roots.find(x) == roots.end()) {
-    roots[x] = x;
-    ranks[x] = 1;
+  while (roots[x] != x) {
+    roots[x] = roots[roots[x]];
+    x = roots[x];
   }
-  if (roots[x] != x) {
-    roots[x] = FindRoot(roots[x]);
-  }
-  return roots[x];
+  return x;
 }
 
 void UnionFind::Union(int x, int y) {
   int root_x = FindRoot(x);
   int root_y = FindRoot(y);
-  if (root_x != root_y) {
-    if (ranks[root_x] > ranks[root_y]) {
-      roots[root_y] = root_x;
-    } else if (ranks[root_x] < ranks[root_y]) {
-      roots[root_x] = root_y;
-    } else {
-      roots[root_y] = root_x;
-      ranks[root_x]++;
-    }
+  if (root_x == root_y) {
+    return;
+  }
+  if (ranks[root_x] < ranks[root_y]) {
+    std::swap(root_x, root_y);
+  }
+  roots[root_y] = root_x;
+  if (ranks[root_x] == ranks[root_y]) {
+    ranks[root_x]++;
   }
 }
 
@@ -90,44 +104,102 @@ void voroshilov_v_convex_hull_components_all::CheckBoundaryPixels(UnionFind* uni
 void voroshilov_v_convex_hull_components_all::MergeComponentsAcrossAreas(std::vector<Component>& components,
                                                                          Image& image, int area_height,
                                                                          std::vector<int>& end_y) {
-  UnionFind union_find;
-
+  if (components.empty()) {
+    return;
+  }
+  
+  int num_threads = omp_get_max_threads();
+  UnionFind union_find((num_threads * 1000) + 3);
+  
   int width = image.width;
   int height = image.height;
-
+  
   for (int endy : end_y) {
     int y = endy - 1;
     if (y != height - 1) {
       for (int x = 0; x < width; x++) {
-        CheckBoundaryPixels(&union_find, image, y, x);
+        CheckBoundaryPixels(union_find, image, y, x);
       }
     }
   }
 
-  std::unordered_map<int, Component> merged_components;
-  for (Component& component : components) {
-    int new_id = union_find.FindRoot(component[0].value);
-    if (merged_components.find(new_id) == merged_components.end()) {
-      merged_components[new_id] = Component();
-    }
-    merged_components[new_id].insert(merged_components[new_id].end(), component.begin(), component.end());
+  int n = (int)components.size();
+  std::vector<int> all_roots;
+  all_roots.reserve(n);
+  for (int i = 0; i < n; i++) {
+    int label = components[i][0].value;
+    all_roots.push_back(union_find.FindRoot(label));
+  }
+  
+  std::vector<int> roots_unique = all_roots;
+  std::sort(roots_unique.begin(), roots_unique.end());
+  roots_unique.erase(std::unique(roots_unique.begin(), roots_unique.end()), roots_unique.end());
+  int r = (int)roots_unique.size();
+
+  int max_root = roots_unique.back();
+  std::vector<int> root_to_indx(max_root + 1, -1);
+  for (int i = 0; i < r; i++) {
+    root_to_indx[roots_unique[i]] = i;
   }
 
-  components.clear();
-  for (auto& entry : merged_components) {
-    components.push_back(entry.second);
+  std::vector<std::vector<int>> comps_by_root(r);
+  for (int i = 0; i < n; i++) {
+    int b = root_to_indx[all_roots[i]];
+    comps_by_root[b].push_back(i);
   }
+
+  std::vector<Component> merged(r);
+#pragma omp parallel for schedule(dynamic)
+  for (int i = 0; i < r; i++) {
+    size_t total = 0;
+    for (int indx : comps_by_root[i]) {
+      total += components[indx].size();
+    }
+    merged[i].reserve(total);
+
+    for (int indx : comps_by_root[i]) {
+      Component& src = components[indx];
+      std::move(src.begin(), src.end(), std::back_inserter(merged[i]));
+    }
+  }
+
+  components = std::move(merged);
 }
 
-Component voroshilov_v_convex_hull_components_all::DepthComponentSearchInArea(Pixel start_pixel, Image* tmp_image,
+std::vector<Component> voroshilov_v_convex_hull_components_all::CombineThreadsComponents(std::vector<std::vector<Component>>& threads_components) {
+  int num_threads = (int)threads_components.size();
+
+  std::vector<int> sizes(num_threads);
+  std::vector<int> offsets(num_threads + 1);
+  for (int i = 0; i < num_threads; i++) {
+    sizes[i] = (int)threads_components[i].size();
+  }
+
+  offsets[0] = 0;
+  for (int i = 0; i < num_threads; i++) {
+    offsets[i + 1] = offsets[i] + sizes[i];
+  }
+  
+  std::vector<Component> components(offsets[num_threads]);
+
+  for (int i = 0; i < num_threads; i++) {
+    std::vector<Component>& src = threads_components[i];
+    auto dst_it = components.begin() + offsets[i];
+    std::move(src.begin(), src.end(), dst_it);
+  }
+
+  return components;
+}
+
+Component voroshilov_v_convex_hull_components_all::DepthComponentSearchInArea(Pixel start_pixel, Image& image,
                                                                               int index, int start_y, int end_y) {
   const int step_y[8] = {1, 1, 1, 0, 0, -1, -1, -1};  // Offsets by Y (up, stand, down)
   const int step_x[8] = {-1, 0, 1, -1, 1, -1, 0, 1};  // Offsets by X (left, stand, right)
   std::stack<Pixel> stack;
   std::vector<Pixel> component_pixels;
   stack.push(start_pixel);
-  tmp_image->GetPixel(start_pixel.y, start_pixel.x).value = index;                // Mark start pixel as visited
-  component_pixels.push_back(tmp_image->GetPixel(start_pixel.y, start_pixel.x));  // Add start pixel to component
+  image.GetPixel(start_pixel.y, start_pixel.x).value = index;                // Mark start pixel as visited
+  component_pixels.push_back(image.GetPixel(start_pixel.y, start_pixel.x));  // Add start pixel to component
 
   while (!stack.empty()) {
     Pixel current_pixel = stack.top();
@@ -135,11 +207,11 @@ Component voroshilov_v_convex_hull_components_all::DepthComponentSearchInArea(Pi
     for (int i = 0; i < 8; i++) {
       int next_y = current_pixel.y + step_y[i];
       int next_x = current_pixel.x + step_x[i];
-      if (next_y >= start_y && next_y < end_y && next_x >= 0 && next_x < tmp_image->width &&
-          tmp_image->GetPixel(next_y, next_x) == 1) {
-        stack.push(tmp_image->GetPixel(next_y, next_x));
-        tmp_image->GetPixel(next_y, next_x).value = index;                // Mark neighbour pixel as visited
-        component_pixels.push_back(tmp_image->GetPixel(next_y, next_x));  // Add neighbour pixel to component
+      if (next_y >= start_y && next_y < end_y && next_x >= 0 && next_x < image.width &&
+          image.GetPixel(next_y, next_x) == 1) {
+        stack.push(image.GetPixel(next_y, next_x));
+        image.GetPixel(next_y, next_x).value = index;                // Mark neighbour pixel as visited
+        component_pixels.push_back(image.GetPixel(next_y, next_x));  // Add neighbour pixel to component
       }
     }
   }
@@ -149,15 +221,15 @@ Component voroshilov_v_convex_hull_components_all::DepthComponentSearchInArea(Pi
   return component;
 }
 
-std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsInArea(Image& tmp_image, int start_y,
+std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsInArea(Image& image, int start_y,
                                                                                      int end_y, int index_offset) {
   std::vector<Component> components;
   int index = index_offset;  // unique index in this area
 
   for (int y = start_y; y < end_y; y++) {
-    for (int x = 0; x < tmp_image.width; x++) {
-      if (tmp_image.GetPixel(y, x) == 1) {
-        Component component = DepthComponentSearchInArea(tmp_image.GetPixel(y, x), &tmp_image, index, start_y, end_y);
+    for (int x = 0; x < image.width; x++) {
+      if (image.GetPixel(y, x) == 1) {
+        Component component = DepthComponentSearchInArea(image.GetPixel(y, x), &image, index, start_y, end_y);
         components.push_back(component);
         index++;
       }
@@ -174,7 +246,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsIn
 std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsOMP(Image& image) {
   int num_threads = omp_get_max_threads();
 
-  std::vector<std::vector<Component>> thread_components(num_threads);
+  std::vector<std::vector<Component>> threads_components(num_threads);
 
   int height = image.height;
 
@@ -203,7 +275,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsOM
     end_y[end_y.size() - 1] = height;
 
     for (int i = 0; i < num_threads; i++) {
-      index_offset[i] = (i * 100000) + 2;
+      index_offset[i] = (i * 1000) + 2;
     }
   }
 
@@ -211,14 +283,11 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsOM
   {
     int thread_id = omp_get_thread_num();
 
-    thread_components[thread_id] =
+    threads_components[thread_id] =
         FindComponentsInArea(image, start_y[thread_id], end_y[thread_id], index_offset[thread_id]);
   }
 
-  std::vector<Component> components;
-  for (std::vector<Component>& vec : thread_components) {
-    components.insert(components.end(), vec.begin(), vec.end());
-  }
+  std::vector<Component> components = CombineThreadsComponents(threads_components);
 
   MergeComponentsAcrossAreas(components, image, area_height, end_y);
 

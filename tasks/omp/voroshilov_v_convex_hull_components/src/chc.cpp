@@ -8,10 +8,9 @@
 #include <cstddef>
 #include <iostream>
 #include <stack>
-#include <unordered_map>
 #include <utility>
 #include <vector>
-#include <atomic>
+#include <iterator>
 
 using namespace voroshilov_v_convex_hull_components_omp;
 
@@ -78,24 +77,24 @@ void UnionFind::Union(int x, int y) {
   }
 }
 
-void voroshilov_v_convex_hull_components_omp::CheckBoundaryPixels(UnionFind* union_find, Image& image, int y, int x) {
+void voroshilov_v_convex_hull_components_omp::CheckBoundaryPixels(UnionFind& union_find, Image& image, int y, int x) {
   Pixel p1 = image.GetPixel(y, x);
 
   Pixel p2 = image.GetPixel(y + 1, x);
   if (p1.value > 1 && p2.value > 1) {
-    union_find->Union(p1.value, p2.value);
+    union_find.Union(p1.value, p2.value);
   }
 
   if (x > 0) {
     Pixel p3 = image.GetPixel(y + 1, x - 1);
     if (p1.value > 1 && p3.value > 1) {
-      union_find->Union(p1.value, p3.value);
+      union_find.Union(p1.value, p3.value);
     }
   }
   if (x < image.width - 1) {
     Pixel p4 = image.GetPixel(y + 1, x + 1);
     if (p1.value > 1 && p4.value > 1) {
-      union_find->Union(p1.value, p4.value);
+      union_find.Union(p1.value, p4.value);
     }
   }
 }
@@ -117,7 +116,7 @@ void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::ve
     int y = endy - 1;
     if (y != height - 1) {
       for (int x = 0; x < width; x++) {
-        CheckBoundaryPixels(&union_find, image, y, x);
+        CheckBoundaryPixels(union_find, image, y, x);
       }
     }
   }
@@ -158,7 +157,7 @@ void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::ve
 
     for (int indx : comps_by_root[i]) {
       Component& src = components[indx];
-      merged[i].insert(merged[i].end(), std::make_move_iterator(src.begin()), std::make_move_iterator(src.end()));
+      std::move(src.begin(), src.end(), std::back_inserter(merged[i]));
     }
   }
 

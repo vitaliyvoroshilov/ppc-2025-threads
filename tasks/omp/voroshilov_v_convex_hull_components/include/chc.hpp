@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstddef>
-#include <unordered_map>
 #include <vector>
 
 namespace voroshilov_v_convex_hull_components_omp {
@@ -55,10 +54,9 @@ class UnionFind {
   void Union(int x, int y);
 };
 
-void CheckBoundaryPixels(UnionFind* union_find, Image& image, int y, int x);
+void CheckBoundaryPixels(UnionFind& union_find, Image& image, int y, int x);
 
-void MergeComponentsAcrossAreas(std::vector<Component>& components, Image& image, int area_height,
-                                std::vector<int>& end_y);
+void MergeComponentsAcrossAreas(std::vector<Component>& components, Image& image, int area_height, std::vector<int>& end_y);
 
 std::vector<Component> CombineThreadsComponents(std::vector<std::vector<Component>>& threads_components);
 
