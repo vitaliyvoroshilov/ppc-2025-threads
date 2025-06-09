@@ -414,50 +414,59 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::SendExtraCompone
   std::vector<Component> from_up;
   if (rank > 0) {
     world.recv(rank - 1, 2, from_up);
-    std::cout << std::endl << rank << " received " << from_up.size() << " components, start_y = " << start_y << std::endl;
   }
 
-  std::unordered_map<int, int> boundary_map;
+  std::unordered_map<int, std::vector<int>> boundary_map;
   for (int i = 0; i < (int)local_components.size(); i++) {
     for (Pixel& p : local_components[i]) {
       if (p.y == start_y) {
-        boundary_map[p.x] = i;
+        boundary_map[p.x].push_back(i);
       }
     }
   }
 
-  for (Component& comp : from_up) {
-    bool merged = false;
-    for (Pixel& p : comp) {
+  int loc_size = (int)local_components.size();
+  int up_size = (int)from_up.size();
+
+  UnionFind uf(loc_size + up_size);
+
+  for (int i = 0; i < (int)from_up.size(); i++) {
+    for (Pixel& p : from_up[i]) {
       if (p.y == start_y - 1) {
         for (int dx = -1; dx <= 1; dx++) {
-          auto it = boundary_map.find(p.x + dx);
+          int xx = p.x + dx;
+          auto it = boundary_map.find(xx);
           if (it != boundary_map.end()) {
-            auto& dst = local_components[it->second];
-            dst.insert(dst.end(), std::make_move_iterator(comp.begin()), std::make_move_iterator(comp.end()));
-            merged = true;
-            break;
+            for (int i_loc : it->second) {
+              uf.Union(i_loc, loc_size + i);
+            }   
           }
-        }
-        if (merged) {
-          break;
         }
       }
     }
-    if (!merged) {
-      local_components.push_back(std::move(comp));
-    }
+  }
+
+  std::unordered_map<int, std::vector<Pixel>> merged_pixels;
+  merged_pixels.reserve(loc_size + up_size);
+  for (int i = 0; i < loc_size; i++){ 
+    int r = uf.FindRoot(i);
+    merged_pixels[r].insert(merged_pixels[r].end(), std::make_move_iterator(local_components[i].begin()), std::make_move_iterator(local_components[i].end()));
+  }
+  for (int i = 0; i < up_size; i++) {
+    int idx = loc_size + i;
+    int r = uf.FindRoot(idx);
+    merged_pixels[r].insert(merged_pixels[r].end(), std::make_move_iterator(from_up[i].begin()), std::make_move_iterator(from_up[i].end()));
   }
 
   std::vector<Component> to_keep;
   std::vector<Component> to_send;
 
-  for (Component& comp : local_components) {
+  for (auto& [root, idxs] : merged_pixels) {
+    Component comp(std::move(idxs));
     int max_y = comp.front().y;
     for (Pixel& p : comp) {
       max_y = std::max(max_y, p.y);
     }
-
     if (max_y < end_y - 1) {
       to_keep.push_back(std::move(comp));
     } else {
