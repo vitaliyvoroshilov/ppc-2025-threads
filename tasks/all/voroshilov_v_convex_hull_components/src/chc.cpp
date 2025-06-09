@@ -14,6 +14,7 @@
 #include <vector>
 #include <iostream>
 #include <chrono>
+#include <unordered_map>
 
 using namespace voroshilov_v_convex_hull_components_all;
 
@@ -296,66 +297,6 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsOM
   return components;
 }
 
-std::vector<std::pair<int, int>> voroshilov_v_convex_hull_components_all::GetLocalEquis(boost::mpi::communicator world, int rank, int width, std::vector<int>& local_pixels) {
-  std::vector<std::pair<int, int>> local_equis;
-  if (rank > 0) {
-    std::vector<int> row_send(width);
-    std::vector<int> row_recv(width);
-
-    std::copy_n(local_pixels.data(), width, row_send.begin());
-    world.send(rank - 1, 0, row_send);
-    world.recv(rank - 1, 1, row_recv);
-
-    for (int x = 0; x < width; x++) {
-      int a = row_send[x];
-      int b = row_recv[x];
-      if (a > 1 && b > 1) {
-        local_equis.emplace_back(a, b);
-      }
-    }
-  }
-
-  if (rank + 1 < world.size()) {
-    std::vector<int> row_send(width);
-    std::vector<int> row_recv(width);
-
-    std::copy_n(local_pixels.data(), width, row_send.begin());
-    world.recv(rank + 1, 0, row_recv);
-    world.send(rank + 1, 1, row_send);
-
-    for (int x = 0; x < width; x++) {
-      int a = row_send[x];
-      int b = row_recv[x];
-      if (a > 1 && b > 1) {
-        local_equis.emplace_back(a, b);
-      }
-    }
-  }
-
-  return local_equis;
-}
-
-std::vector<int> voroshilov_v_convex_hull_components_all::GetMapLabels(std::vector<std::vector<std::pair<int, int>>>& all_equis) {
-  std::vector<int> map_labels;
-  int max_label = 0;
-  for (auto& local_equis : all_equis) {
-    for (auto& pair : local_equis) {
-      max_label = std::max({max_label, pair.first, pair.second});
-    }
-  }
-  UnionFind uf(max_label + 1);
-  for (auto& local_equis : all_equis) {
-    for (auto& pair : local_equis) {
-      uf.Union(pair.first, pair.second);
-    }
-  }
-  map_labels.resize(max_label + 1);
-  for (int L = 0; L <= max_label; L++) {
-    map_labels[L] = uf.FindRoot(L);
-  }
-  return map_labels;
-}
-
 std::vector<Component> voroshilov_v_convex_hull_components_all::SendExtraComponents(boost::mpi::communicator world, int start_y, int end_y, std::vector<Component>& local_components) {
   int rank = world.rank();
   int num_procs = world.size();
@@ -385,8 +326,28 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::SendExtraCompone
     world.recv(rank - 1, 2, from_up);
   }
 
-  std::vector<Component> local_full_components = std::move(to_keep);
-  local_full_components.insert(local_full_components.end(), std::make_move_iterator(from_up.begin()), std::make_move_iterator(from_up.end()));
+  std::vector<Component> all;
+  all.reserve(to_keep.size() + from_up.size());
+  for (Component& comp : to_keep) {
+    all.push_back(std::move(comp));
+  }
+  for (Component& comp : from_up) {
+    all.push_back(std::move(comp));
+  }
+
+  std::unordered_map<int, Component> merged;
+  merged.reserve(all.size());
+  for (Component& comp : all) {
+    int label = comp.front().value;
+    auto& dest = merged[label];
+    dest.insert(dest.end(), std::make_move_iterator(comp.begin()), std::make_move_iterator(comp.end()));
+  }
+
+  std::vector<Component> local_full_components;
+  local_full_components.reserve(merged.size());
+  for (auto& pair : merged) {
+    local_full_components.push_back(std::move(pair.second));
+  }
 
   return local_full_components;
 }
@@ -396,6 +357,9 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMP
   
   int num_procs = world.size();
   int rank = world.rank();
+
+  boost::mpi::broadcast(world, height, 0);
+  boost::mpi::broadcast(world, width, 0);
 
   auto start = std::chrono::high_resolution_clock::now();
 
@@ -460,26 +424,6 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMP
   duration = end - start;
   std::cout << "[ALL <" << world.rank() << "> FindComponentsOMP: " << duration.count() << " ms]" << std::endl;
   start = std::chrono::high_resolution_clock::now();
-
-/*
-  std::vector<std::pair<int,int>> local_equis = GetLocalEquis(world, rank, width, local_pixels);
-
-  std::vector<std::vector<std::pair<int, int>>> all_equis;
-  boost::mpi::gather(world, local_equis, all_equis, 0);
-
-  std::vector<int> map_labels;
-  if (rank == 0) {
-    map_labels = GetMapLabels(all_equis);
-  }
-
-  boost::mpi::broadcast(world, map_labels, 0);
-
-  for (Component& comp : local_components) {
-    for (Pixel& p : comp) {
-      p.value = map_labels[p.value];
-    }
-  }
-*/
 
   std::vector<Component> local_full_components = SendExtraComponents(world, start_y[rank], end_y[rank], local_components);
 
