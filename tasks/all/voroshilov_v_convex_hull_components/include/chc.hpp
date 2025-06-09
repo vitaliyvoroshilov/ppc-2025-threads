@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <unordered_map>
 #include <vector>
+#include <boost/mpi/communicator.hpp>
 
 namespace voroshilov_v_convex_hull_components_all {
 
@@ -72,13 +73,22 @@ void CheckBoundaryPixels(UnionFind& union_find, Image& image, int y, int x);
 void MergeComponentsAcrossAreas(std::vector<Component>& components, Image& image, int area_height,
                                 std::vector<int>& end_y);
 
-std::vector<Component> CombineThreadsComponents(std::vector<std::vector<Component>>& threads_components);
+template <typename T>
+std::vector<T> MergeVectors(std::vector<std::vector<T>>& vectors);
 
 Component DepthComponentSearchInArea(Pixel start_pixel, Image& image, int index, int start_y, int end_y);
 
 std::vector<Component> FindComponentsInArea(Image& image, int start_y, int end_y, int index_offset);
 
 std::vector<Component> FindComponentsOMP(Image& image);
+
+std::vector<std::pair<int, int>> GetLocalEquis(boost::mpi::communicator world, int rank, int width, std::vector<int>& local_pixels);
+
+std::vector<int> GetMapLabels(std::vector<std::vector<std::pair<int, int>>>& all_equis);
+
+std::vector<Component> SendExtraComponents(boost::mpi::communicator world, int start_y, int end_y, std::vector<Component>& local_components);
+
+std::vector<Component> FindComponentsMPIOMP(int height, int width, std::vector<int>& pixels_in);
 
 int CheckRotation(Pixel& first, Pixel& second, Pixel& third);
 
@@ -93,7 +103,7 @@ std::vector<std::vector<int>> PackIdxs(std::vector<Component>& components, int i
 
 std::vector<Hull> QuickHullAllOMP(std::vector<Component>& components);
 
-std::vector<Hull> QuickHullAllMPIOMP(std::vector<Component>& components, int image_width);
+std::vector<Hull> QuickHullAllMPIOMP(std::vector<Component>& components);
 
 void PackHulls(std::vector<Hull>& hulls, int width, int height, int* hulls_indxs, int* pixels_indxs);
 

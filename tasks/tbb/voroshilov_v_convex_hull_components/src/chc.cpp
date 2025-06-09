@@ -170,29 +170,30 @@ void voroshilov_v_convex_hull_components_tbb::MergeComponentsAcrossAreas(std::ve
   components = std::move(merged);
 }
 
-std::vector<Component> voroshilov_v_convex_hull_components_tbb::CombineThreadsComponents(std::vector<std::vector<Component>>& threads_components) {
-  int num_threads = (int)threads_components.size();
+template <typename T>
+std::vector<T> voroshilov_v_convex_hull_components_tbb::MergeVectors(std::vector<std::vector<T>>& vectors) {
+  int size = (int)vectors.size();
 
-  std::vector<int> sizes(num_threads);
-  std::vector<int> offsets(num_threads + 1);
-  for (int i = 0; i < num_threads; i++) {
-    sizes[i] = (int)threads_components[i].size();
+  std::vector<int> sizes(size);
+  std::vector<int> offsets(size + 1);
+  for (int i = 0; i < size; i++) {
+    sizes[i] = (int)vectors[i].size();
   }
 
   offsets[0] = 0;
-  for (int i = 0; i < num_threads; i++) {
+  for (int i = 0; i < size; i++) {
     offsets[i + 1] = offsets[i] + sizes[i];
   }
   
-  std::vector<Component> components(offsets[num_threads]);
+  std::vector<T> vec(offsets[size]);
 
-  for (int i = 0; i < num_threads; i++) {
-    std::vector<Component>& src = threads_components[i];
-    auto dst_it = components.begin() + offsets[i];
+  for (int i = 0; i < size; i++) {
+    std::vector<T>& src = vectors[i];
+    auto dst_it = vec.begin() + offsets[i];
     std::move(src.begin(), src.end(), dst_it);
   }
 
-  return components;
+  return vec;
 }
 
 Component voroshilov_v_convex_hull_components_tbb::DepthComponentSearchInArea(Pixel start_pixel, Image& image,
@@ -259,9 +260,9 @@ std::vector<Component> voroshilov_v_convex_hull_components_tbb::FindComponentsTB
   std::vector<int> start_y(num_threads);
   std::vector<int> end_y(num_threads);
   std::vector<int> index_offset(num_threads);
+  start_y[0] = 0;
 
   if (num_threads == 1) {
-    start_y[0] = 0;
     end_y[0] = height;
     index_offset[0] = 2;
   } else {
@@ -292,7 +293,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_tbb::FindComponentsTB
     });
   });
 
-  std::vector<Component> components = CombineThreadsComponents(threads_components);
+  std::vector<Component> components = MergeVectors<Component>(threads_components);
 
   MergeComponentsAcrossAreas(components, image, area_height, end_y);
 

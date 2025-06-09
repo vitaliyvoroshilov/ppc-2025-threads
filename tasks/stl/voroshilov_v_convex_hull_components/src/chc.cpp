@@ -188,29 +188,30 @@ void voroshilov_v_convex_hull_components_stl::MergeComponentsAcrossAreas(std::ve
   components = std::move(merged);
 }
 
-std::vector<Component> voroshilov_v_convex_hull_components_stl::CombineThreadsComponents(std::vector<std::vector<Component>>& threads_components) {
-  int num_threads = (int)threads_components.size();
+template <typename T>
+std::vector<T> voroshilov_v_convex_hull_components_stl::MergeVectors(std::vector<std::vector<T>>& vectors) {
+  int size = (int)vectors.size();
 
-  std::vector<int> sizes(num_threads);
-  std::vector<int> offsets(num_threads + 1);
-  for (int i = 0; i < num_threads; i++) {
-    sizes[i] = (int)threads_components[i].size();
+  std::vector<int> sizes(size);
+  std::vector<int> offsets(size + 1);
+  for (int i = 0; i < size; i++) {
+    sizes[i] = (int)vectors[i].size();
   }
 
   offsets[0] = 0;
-  for (int i = 0; i < num_threads; i++) {
+  for (int i = 0; i < size; i++) {
     offsets[i + 1] = offsets[i] + sizes[i];
   }
   
-  std::vector<Component> components(offsets[num_threads]);
+  std::vector<T> vec(offsets[size]);
 
-  for (int i = 0; i < num_threads; i++) {
-    std::vector<Component>& src = threads_components[i];
-    auto dst_it = components.begin() + offsets[i];
+  for (int i = 0; i < size; i++) {
+    std::vector<T>& src = vectors[i];
+    auto dst_it = vec.begin() + offsets[i];
     std::move(src.begin(), src.end(), dst_it);
   }
 
-  return components;
+  return vec;
 }
 
 Component voroshilov_v_convex_hull_components_stl::DepthComponentSearchInArea(Pixel start_pixel, Image& image,
@@ -291,7 +292,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_stl::FindComponentsST
     th.join();
   }
 
-  std::vector<Component> components = CombineThreadsComponents(threads_components);
+  std::vector<Component> components = MergeVectors<Component>(threads_components);
 
   MergeComponentsAcrossAreas(components, image, chunk_height, y2);
 

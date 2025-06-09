@@ -38,36 +38,17 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::PreProcessingImpl() {
 }
 
 bool voroshilov_v_convex_hull_components_all::ChcTaskALL::RunImpl() {
-  std::vector<Component> components;
-
   auto start = std::chrono::high_resolution_clock::now();
+  
+  std::vector<Component> local_components = FindComponentsMPIOMP(height_in_, width_in_, pixels_in_);
+  
   auto end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double, std::milli> duration = end - start;
-  
-  if (world_.rank() == 0) {
-    start = std::chrono::high_resolution_clock::now();
-
-    Image image(height_in_, width_in_, pixels_in_);
-    
-    end = std::chrono::high_resolution_clock::now();
-    duration = end - start;
-    std::cout << "[ALL <" << world_.rank() << "> Image: " << duration.count() << " ms]" << std::endl;
-    start = std::chrono::high_resolution_clock::now();
-    
-    components = FindComponentsOMP(image);
-
-    end = std::chrono::high_resolution_clock::now();
-    duration = end - start;
-    std::cout << "[ALL <" << world_.rank() << "> FindComponents: " << duration.count() << " ms]" << std::endl;
-  }
+  std::cout << "[ALL <" << world_.rank() << "> FindComponents: " << duration.count() << " ms]" << std::endl;
 
   start = std::chrono::high_resolution_clock::now();
 
-  if (world_.size() <= 1) {
-    hulls_out_ = QuickHullAllOMP(components);
-  } else {
-    hulls_out_ = QuickHullAllMPIOMP(components, width_in_);
-  }
+  hulls_out_ = QuickHullAllMPIOMP(local_components);
 
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
