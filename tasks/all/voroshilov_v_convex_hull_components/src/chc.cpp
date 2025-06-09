@@ -79,24 +79,24 @@ void UnionFind::Union(int x, int y) {
   }
 }
 
-void voroshilov_v_convex_hull_components_all::CheckBoundaryPixels(UnionFind* union_find, Image& image, int y, int x) {
+void voroshilov_v_convex_hull_components_all::CheckBoundaryPixels(UnionFind& union_find, Image& image, int y, int x) {
   Pixel p1 = image.GetPixel(y, x);
 
   Pixel p2 = image.GetPixel(y + 1, x);
   if (p1.value > 1 && p2.value > 1) {
-    union_find->Union(p1.value, p2.value);
+    union_find.Union(p1.value, p2.value);
   }
 
   if (x > 0) {
     Pixel p3 = image.GetPixel(y + 1, x - 1);
     if (p1.value > 1 && p3.value > 1) {
-      union_find->Union(p1.value, p3.value);
+      union_find.Union(p1.value, p3.value);
     }
   }
   if (x < image.width - 1) {
     Pixel p4 = image.GetPixel(y + 1, x + 1);
     if (p1.value > 1 && p4.value > 1) {
-      union_find->Union(p1.value, p4.value);
+      union_find.Union(p1.value, p4.value);
     }
   }
 }
@@ -229,7 +229,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsIn
   for (int y = start_y; y < end_y; y++) {
     for (int x = 0; x < image.width; x++) {
       if (image.GetPixel(y, x) == 1) {
-        Component component = DepthComponentSearchInArea(image.GetPixel(y, x), &image, index, start_y, end_y);
+        Component component = DepthComponentSearchInArea(image.GetPixel(y, x), image, index, start_y, end_y);
         components.push_back(component);
         index++;
       }
