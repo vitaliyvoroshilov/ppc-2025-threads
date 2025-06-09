@@ -6,6 +6,7 @@
 #include <boost/mpi/collectives.hpp>
 #include <boost/mpi/communicator.hpp>
 #include <boost/serialization/vector.hpp>  // NOLINT(misc-include-cleaner)
+#include <boost/serialization/utility.hpp>  // NOLINT(misc-include-cleaner)
 #include <cmath>
 #include <cstddef>
 #include <iterator>
@@ -14,6 +15,7 @@
 #include <vector>
 #include <iostream>
 #include <chrono>
+
 
 using namespace voroshilov_v_convex_hull_components_all;
 
@@ -338,24 +340,26 @@ std::vector<std::pair<int, int>> voroshilov_v_convex_hull_components_all::GetLoc
 void voroshilov_v_convex_hull_components_all::RemapLabels(boost::mpi::communicator world, std::vector<std::vector<std::pair<int, int>>>& all_equis, std::vector<Component>& local_components) {
   std::vector<int> map_labels;
 
-  boost::mpi::broadcast(world, map_labels, 0);
+  if (world.rank() == 0) {
+    int max_label = 0;
+    for (auto& local_equis : all_equis) {
+      for (auto& pair : local_equis) {
+        max_label = std::max({max_label, pair.first, pair.second});
+      }
+    }
+    UnionFind uf(max_label + 1);
+    for (auto& local_equis : all_equis) {
+      for (auto& pair : local_equis) {
+        uf.Union(pair.first, pair.second);
+      }
+    }
+    map_labels.resize(max_label + 1);
+    for (int L = 0; L <= max_label; L++) {
+      map_labels[L] = uf.FindRoot(L);
+    }
+  }
 
-  int max_label = 0;
-  for (auto& local_equis : all_equis) {
-    for (auto& pair : local_equis) {
-      max_label = std::max({max_label, pair.first, pair.second});
-    }
-  }
-  UnionFind uf(max_label + 1);
-  for (auto& local_equis : all_equis) {
-    for (auto& pair : local_equis) {
-      uf.Union(pair.first, pair.second);
-    }
-  }
-  map_labels.resize(max_label + 1);
-  for (int L = 0; L <= max_label; L++) {
-    map_labels[L] = uf.FindRoot(L);
-  }
+  boost::mpi::broadcast(world, map_labels, 0);
 
   for (Component& comp : local_components) {
     for (Pixel& p : comp) {
