@@ -301,31 +301,48 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::SendExtraCompone
   int rank = world.rank();
   int num_procs = world.size();
 
-  std::vector<Component> to_keep;
-  std::vector<Component> to_send;
+  std::vector<Component> curr = std::move(local_components);
+  std::vector<Component> full;
+  full.reserve(curr.size());
 
-  for (Component& comp : local_components) {
-    int max_y = comp.front().y;
-    for (Pixel& p : comp) {
-      max_y = std::max(max_y, p.y);
+  for (int hop = 0; hop < num_procs - 1; hop++) {
+    std::vector<Component> to_send;
+    std::vector<Component> to_recv;
+  
+    for (Component& comp : curr) {
+      int max_y = comp.front().y;
+      for (Pixel& p : comp) {
+        max_y = std::max(max_y, p.y);
+      }
+      if (max_y < end_y - 1) {
+        full.push_back(std::move(comp));
+      } else {
+        to_send.push_back(std::move(comp));
+      }
+    }
+    curr.clear();
+
+    if (rank + 1 < num_procs) {
+      world.send(rank + 1, 2, to_send);
+    }
+    if (rank > 0) {
+      world.recv(rank - 1, 2, to_recv);
     }
 
-    if (max_y < end_y - 1) {
-      to_keep.push_back(std::move(comp));
-    } else {
-      to_send.push_back(std::move(comp));
+    curr = std::move(to_recv);
+    if (to_send.empty() && curr.empty()) {
+      break;
     }
   }
 
-  if (rank + 1 < num_procs) {
-    world.send(rank + 1, 2, to_send);
+  if (rank == num_procs - 1) {
+    for (Component& comp : curr) {
+      full.push_back(std::move(comp));
+    }
   }
 
-  std::vector<Component> from_up;
-  if (rank > 0) {
-    world.recv(rank - 1, 2, from_up);
-  }
 
+/*
   std::vector<Component> all;
   all.reserve(to_keep.size() + from_up.size());
   for (Component& comp : to_keep) {
@@ -348,8 +365,9 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::SendExtraCompone
   for (auto& pair : merged) {
     local_full_components.push_back(std::move(pair.second));
   }
+*/
 
-  return local_full_components;
+  return full;
 }
 
 std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMPIOMP(int height, int width, std::vector<int>& pixels_in) {
