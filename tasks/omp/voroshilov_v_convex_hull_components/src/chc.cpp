@@ -103,6 +103,10 @@ void voroshilov_v_convex_hull_components_omp::CheckBoundaryPixels(UnionFind* uni
 void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::vector<Component>& components,
                                                                          Image& image, int area_height,
                                                                          std::vector<int>& end_y) {
+  if (components.empty()) {
+    return;
+  }
+  
   int num_threads = omp_get_max_threads();
   UnionFind union_find((num_threads * 1000) + 3);
   
@@ -144,7 +148,7 @@ void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::ve
   }
 
   std::vector<Component> merged(r);
-#pragma omp parallel for schedule(dynamic, 1)
+#pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < r; i++) {
     size_t total = 0;
     for (int indx : comps_by_root[i]) {
@@ -154,7 +158,7 @@ void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::ve
 
     for (int indx : comps_by_root[i]) {
       Component& src = components[indx];
-      merged[i].insert(merged[i].end(), src.begin(), src.end());
+      merged[i].insert(merged[i].end(), std::make_move_iterator(src.begin()), std::make_move_iterator(src.end()));
     }
   }
 
