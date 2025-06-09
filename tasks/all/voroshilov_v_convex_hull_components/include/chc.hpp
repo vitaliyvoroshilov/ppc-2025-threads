@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 #include <boost/mpi/communicator.hpp>
+#include <boost/mpi/collectives.hpp>
 
 namespace voroshilov_v_convex_hull_components_all {
 

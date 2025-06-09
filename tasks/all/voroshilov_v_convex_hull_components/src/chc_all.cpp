@@ -44,7 +44,7 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::RunImpl() {
   
   auto end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double, std::milli> duration = end - start;
-  std::cout << "[ALL <" << world_.rank() << "> FindComponents: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[ALL <" << world_.rank() << "> FindComponentsMPIOMP: " << duration.count() << " ms]" << std::endl;
 
   start = std::chrono::high_resolution_clock::now();
 
@@ -52,7 +52,7 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::RunImpl() {
 
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
-  std::cout << "[ALL <" << world_.rank() << "> QuickHullAll: " << duration.count() << " ms]" << std::endl;
+  std::cout << "[ALL <" << world_.rank() << "> QuickHullAllMPIOMP: " << duration.count() << " ms]" << std::endl;
 
   return true;
 }

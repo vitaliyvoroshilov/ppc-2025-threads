@@ -13,6 +13,7 @@
 #include <utility>
 #include <vector>
 #include <iostream>
+#include <chrono>
 
 using namespace voroshilov_v_convex_hull_components_all;
 
@@ -396,12 +397,13 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMP
   int num_procs = world.size();
   int rank = world.rank();
 
+  auto start = std::chrono::high_resolution_clock::now();
+
   int area_height = height / num_procs;
   int remainder = height % num_procs;
-  std::vector<int> start_y(num_procs);
+  std::vector<int> start_y(num_procs, 0);
   std::vector<int> end_y(num_procs);
   std::vector<int> index_offset(num_procs);
-  start_y[0] = 0;
   
   if (num_procs == 1) {
     end_y[0] = height;
@@ -430,14 +432,35 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMP
     sizes[i] = (end_y[i] - start_y[i]) * width;
     displs[i] = start_y[i] * width;
   }
+
+  auto end = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double, std::milli> duration = end - start;
+  std::cout << "[ALL <" << world.rank() << "> Distributions: " << duration.count() << " ms]" << std::endl;
+  start = std::chrono::high_resolution_clock::now();
   
   std::vector<int> local_pixels(sizes[rank]);
-  boost::mpi::scatterv(world, pixels_in, sizes, displs, local_pixels, 0);
+  boost::mpi::scatterv(world, pixels_in, sizes, displs, local_pixels.data(), static_cast<int>(local_pixels.size()), 0);
+
+  end = std::chrono::high_resolution_clock::now();
+  duration = end - start;
+  std::cout << "[ALL <" << world.rank() << "> Scatterv: " << duration.count() << " ms]" << std::endl;
+  start = std::chrono::high_resolution_clock::now();
   
   int local_height = end_y[rank] - start_y[rank];
   Image local_image(local_height, width, local_pixels);
 
+  end = std::chrono::high_resolution_clock::now();
+  duration = end - start;
+  std::cout << "[ALL <" << world.rank() << "> LocalImage: " << duration.count() << " ms]" << std::endl;
+  start = std::chrono::high_resolution_clock::now();
+
   std::vector<Component> local_components = FindComponentsOMP(local_image);
+
+  end = std::chrono::high_resolution_clock::now();
+  duration = end - start;
+  std::cout << "[ALL <" << world.rank() << "> FindComponentsOMP: " << duration.count() << " ms]" << std::endl;
+  start = std::chrono::high_resolution_clock::now();
+
 /*
   std::vector<std::pair<int,int>> local_equis = GetLocalEquis(world, rank, width, local_pixels);
 
@@ -459,6 +482,10 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMP
 */
 
   std::vector<Component> local_full_components = SendExtraComponents(world, start_y[rank], end_y[rank], local_components);
+
+  end = std::chrono::high_resolution_clock::now();
+  duration = end - start;
+  std::cout << "[ALL <" << world.rank() << "> SendExtraComponents: " << duration.count() << " ms]" << std::endl;
   
   return local_full_components;
 }
@@ -541,13 +568,13 @@ std::vector<Pixel> voroshilov_v_convex_hull_components_all::QuickHull(Component&
   return res_hull;
 }
 
-void voroshilov_v_convex_hull_components_all::ComputePartition(int vec_size, int world_size, std::vector<int>& parts,
+void voroshilov_v_convex_hull_components_all::ComputePartition(int vec_size, int worldsize, std::vector<int>& parts,
                                                                std::vector<int>& offsets) {
-  int base = vec_size / world_size;
-  int remainder = vec_size % world_size;
-  parts.resize(world_size);
-  offsets.resize(world_size);
-  for (int i = 0; i < world_size; i++) {
+  int base = vec_size / worldsize;
+  int remainder = vec_size % worldsize;
+  parts.resize(worldsize);
+  offsets.resize(worldsize);
+  for (int i = 0; i < worldsize; i++) {
     parts[i] = base;
     if (remainder > 0) {
       parts[i]++;
@@ -566,9 +593,9 @@ std::vector<std::vector<int>> voroshilov_v_convex_hull_components_all::PackIdxs(
                                                                                 std::vector<int>& parts,
                                                                                 std::vector<int>& offsets,
                                                                                 std::vector<int>& comp_sizes) {
-  int world_size = static_cast<int>(parts.size());
-  std::vector<std::vector<int>> split_idxs(world_size);
-  for (int i = 0; i < world_size; i++) {
+  int worldsize = static_cast<int>(parts.size());
+  std::vector<std::vector<int>> split_idxs(worldsize);
+  for (int i = 0; i < worldsize; i++) {
     int part = parts[i];
     int offset = offsets[i];
     int total_pixels = 0;
