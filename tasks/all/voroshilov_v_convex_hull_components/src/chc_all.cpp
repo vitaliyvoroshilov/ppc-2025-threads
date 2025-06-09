@@ -3,8 +3,6 @@
 #include <algorithm>
 #include <boost/mpi/communicator.hpp>
 #include <vector>
-#include <chrono>
-#include <iostream>
 
 #include "../include/chc.hpp"
 
@@ -38,21 +36,9 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::PreProcessingImpl() {
 }
 
 bool voroshilov_v_convex_hull_components_all::ChcTaskALL::RunImpl() {
-  auto start = std::chrono::high_resolution_clock::now();
-  
   std::vector<Component> local_components = FindComponentsMPIOMP(height_in_, width_in_, pixels_in_);
-  
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double, std::milli> duration = end - start;
-  std::cout << "[ALL <" << world_.rank() << "> FindComponentsMPIOMP: " << duration.count() << " ms]" << std::endl;
-
-  start = std::chrono::high_resolution_clock::now();
 
   hulls_out_ = QuickHullAllMPIOMP(local_components);
-
-  end = std::chrono::high_resolution_clock::now();
-  duration = end - start;
-  std::cout << "[ALL <" << world_.rank() << "> QuickHullAllMPIOMP: " << duration.count() << " ms]" << std::endl;
 
   return true;
 }

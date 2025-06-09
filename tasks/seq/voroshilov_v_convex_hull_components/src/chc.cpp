@@ -1,10 +1,8 @@
 #include "../include/chc.hpp"
 
 #include <algorithm>
-#include <chrono>
 #include <cmath>
 #include <cstddef>
-#include <iostream>
 #include <stack>
 #include <vector>
 
@@ -64,8 +62,6 @@ Component voroshilov_v_convex_hull_components_seq::DepthComponentSearch(Pixel& s
 }
 
 std::vector<Component> voroshilov_v_convex_hull_components_seq::FindComponents(Image& image) {
-  auto start = std::chrono::high_resolution_clock::now();
-
   std::vector<Component> components;
   int count = 0;
   for (int y = 0; y < image.height; y++) {
@@ -77,11 +73,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_seq::FindComponents(I
       }
     }
   }
-
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double, std::milli> duration = end - start;
-  std::cout << "[SEQ | dfs: " << duration.count() << " ms]" << std::endl;
-
+  
   if (components.empty()) {
     return {};
   }

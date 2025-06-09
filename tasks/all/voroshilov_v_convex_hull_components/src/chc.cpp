@@ -13,8 +13,6 @@
 #include <stack>
 #include <utility>
 #include <vector>
-#include <iostream>
-#include <chrono>
 
 using namespace voroshilov_v_convex_hull_components_all;
 
@@ -290,123 +288,9 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsOM
   return components;
 }
 
-std::vector<std::pair<int, int>> voroshilov_v_convex_hull_components_all::GetLocalEquis(boost::mpi::communicator world, int rank, int width, std::vector<int>& local_pixels) {
-  std::vector<std::pair<int, int>> local_equis;
-  int local_height = (int)local_pixels.size() / width;
-
-  if (rank > 0) {
-    std::vector<int> row_send(width);
-    std::vector<int> row_recv(width);
-
-    std::copy_n(local_pixels.data(), width, row_send.begin());
-    world.send(rank - 1, 0, row_send);
-    world.recv(rank - 1, 1, row_recv);
-
-    for (int x = 0; x < width; x++) {
-      int a = row_send[x];
-      int b = row_recv[x];
-      if (a > 1 && b > 1) {
-        local_equis.emplace_back(a, b);
-      }
-    }
-  }
-
-  if (rank + 1 < world.size()) {
-    std::vector<int> row_send(width);
-    std::vector<int> row_recv(width);
-
-    std::copy_n(local_pixels.data() + (local_height - 1) * width, width, row_send.begin());
-    world.recv(rank + 1, 0, row_recv);
-    world.send(rank + 1, 1, row_send);
-
-    for (int x = 0; x < width; x++) {
-      int a = row_send[x];
-      int b = row_recv[x];
-      if (a > 1 && b > 1) {
-        local_equis.emplace_back(a, b);
-      }
-    }
-  }
-
-  return local_equis;
-}
-
-std::vector<int> voroshilov_v_convex_hull_components_all::GetMapLabels(std::vector<std::vector<std::pair<int, int>>>& all_equis) {
-  std::vector<int> map_labels;
-  int max_label = 0;
-  for (auto& local_equis : all_equis) {
-    for (auto& pair : local_equis) {
-      max_label = std::max({max_label, pair.first, pair.second});
-    }
-  }
-  UnionFind uf(max_label + 1);
-  for (auto& local_equis : all_equis) {
-    for (auto& pair : local_equis) {
-      uf.Union(pair.first, pair.second);
-    }
-  }
-  map_labels.resize(max_label + 1);
-  for (int L = 0; L <= max_label; L++) {
-    map_labels[L] = uf.FindRoot(L);
-  }
-  return map_labels;
-}
-
-std::vector<Component> voroshilov_v_convex_hull_components_all::SendComponentsToOwners(boost::mpi::communicator world, std::vector<Component>& local_components) {
-  //int rank = world.rank();
-  int num_procs = world.size();
-
-  std::vector<std::vector<Component>> send_bufs(num_procs);
-
-  for (Component& comp : local_components) {
-    int global_label = comp.front().value;
-    int owner = global_label % num_procs;
-    send_bufs[owner].push_back(std::move(comp));
-  }
-/*
-  for (int p = 0; p < num_procs; p++) {
-    if (p == rank) {
-      continue;
-    }
-    world.send(p, 10, send_bufs[p]);
-  }
-*/
-  std::vector<std::vector<Component>> recv_bufs(num_procs);
-  boost::mpi::all_to_all(world, send_bufs, recv_bufs);
-/*
-  for (int p = 0; p < num_procs; p++) {
-    if (p == rank) {
-      recv_bufs[p] = std::move(send_bufs[p]);
-    } else {
-      world.recv(p, 10, recv_bufs[p]);
-    }
-  }
-*/
-  std::unordered_map<int, Component> merged;
-  for (auto& buf : recv_bufs) {
-    for (Component& comp : buf) {
-      int global_label = comp.front().value;
-      auto& dst = merged[global_label];
-      dst.insert(dst.end(), std::make_move_iterator(comp.begin()), std::make_move_iterator(comp.end()));
-    }
-  }
-
-  std::vector<Component> local_full_components;
-  local_full_components.reserve(merged.size());
-  for (auto& pair : merged) {
-    local_full_components.push_back(std::move(pair.second));
-  }
-
-  return local_full_components;
-}
-
 std::vector<Component> voroshilov_v_convex_hull_components_all::SendExtraComponents(boost::mpi::communicator world, int start_y, int end_y, std::vector<Component>& local_components) {
   int rank = world.rank();
   int num_procs = world.size();
-
-  std::cout << std::endl << "START_Y=" << start_y << " END_Y=" << end_y << std::endl;
-  std::cout << std::endl << "LOCAL_COMPONENTS_SIZE=" << local_components.size() << std::endl;
-
 
   std::vector<Component> from_up;
   if (rank > 0) {
@@ -458,8 +342,6 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::SendExtraCompone
   std::vector<Component> to_keep;
   std::vector<Component> to_send;
 
-  std::cout << std::endl << "MERGED_PIXELS_SIZE=" << merged_pixels.size() << std::endl;
-
   for (auto& [root, idxs] : merged_pixels) {
     Component comp(std::move(idxs));
     int max_y = comp.front().y;
@@ -488,8 +370,6 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMP
 
   boost::mpi::broadcast(world, height, 0);
   boost::mpi::broadcast(world, width, 0);
-
-  auto start = std::chrono::high_resolution_clock::now();
 
   int area_height = height / num_procs;
   int remainder = height % num_procs;
@@ -524,34 +404,14 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMP
     sizes[i] = (end_y[i] - start_y[i]) * width;
     displs[i] = start_y[i] * width;
   }
-
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double, std::milli> duration = end - start;
-  std::cout << "[ALL <" << world.rank() << "> Distributions: " << duration.count() << " ms]" << std::endl;
-  start = std::chrono::high_resolution_clock::now();
   
   std::vector<int> local_pixels(sizes[rank]);
   boost::mpi::scatterv(world, pixels_in, sizes, displs, local_pixels.data(), static_cast<int>(local_pixels.size()), 0);
-
-  end = std::chrono::high_resolution_clock::now();
-  duration = end - start;
-  std::cout << "[ALL <" << world.rank() << "> Scatterv: " << duration.count() << " ms]" << std::endl;
-  start = std::chrono::high_resolution_clock::now();
   
   int local_height = end_y[rank] - start_y[rank];
   Image local_image(local_height, width, local_pixels);
 
-  end = std::chrono::high_resolution_clock::now();
-  duration = end - start;
-  std::cout << "[ALL <" << world.rank() << "> LocalImage: " << duration.count() << " ms]" << std::endl;
-  start = std::chrono::high_resolution_clock::now();
-
   std::vector<Component> local_components = FindComponentsOMP(local_image);
-
-  end = std::chrono::high_resolution_clock::now();
-  duration = end - start;
-  std::cout << "[ALL <" << world.rank() << "> FindComponentsOMP: " << duration.count() << " ms]" << std::endl;
-  start = std::chrono::high_resolution_clock::now();
 
   int y_offset = start_y[rank];
   for (Component& comp : local_components) {
@@ -560,47 +420,8 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMP
     }
   }
 
-  end = std::chrono::high_resolution_clock::now();
-  duration = end - start;
-  std::cout << "[ALL <" << world.rank() << "> OffsetImage: " << duration.count() << " ms]" << std::endl;
-
-/*
-  std::vector<std::pair<int,int>> local_equis = GetLocalEquis(world, rank, width, local_pixels);
-
-  std::cout << std::endl << world.rank() << " Ended GetLocalEquis" << std::endl;
-
-  std::vector<std::vector<std::pair<int, int>>> all_equis;
-  boost::mpi::gather(world, local_equis, all_equis, 0);
-
-  std::cout << std::endl << world.rank() << " Ended gather" << std::endl;
-
-  std::vector<int> map_labels;
-  if (rank == 0) {
-    map_labels = GetMapLabels(all_equis);
-  }
-
-  std::cout << std::endl << world.rank() << " Ended GetMapLabels" << std::endl;
-
-  boost::mpi::broadcast(world, map_labels, 0);
-
-  std::cout << std::endl << world.rank() << " Ended Broadcast" << std::endl;
-
-  for (Component& comp : local_components) {
-    for (Pixel& p : comp) {
-      p.value = map_labels[p.value];
-    }
-  }
-
-  std::vector<Component> local_full_components = SendComponentsToOwners(world, local_components);
-
-  std::cout << std::endl << world.rank() << " Ended SendComponentsToOwners" << std::endl;
-*/
   std::vector<Component> local_full_components = SendExtraComponents(world, start_y[rank], end_y[rank], local_components);
 
-  end = std::chrono::high_resolution_clock::now();
-  duration = end - start;
-  std::cout << "[ALL <" << world.rank() << "> SendExtraComponents: " << duration.count() << " ms]" << local_full_components.size() << std::endl;
-  
   return local_full_components;
 }
 
@@ -680,51 +501,6 @@ std::vector<Pixel> voroshilov_v_convex_hull_components_all::QuickHull(Component&
   }
 
   return res_hull;
-}
-
-void voroshilov_v_convex_hull_components_all::ComputePartition(int vec_size, int worldsize, std::vector<int>& parts,
-                                                               std::vector<int>& offsets) {
-  int base = vec_size / worldsize;
-  int remainder = vec_size % worldsize;
-  parts.resize(worldsize);
-  offsets.resize(worldsize);
-  for (int i = 0; i < worldsize; i++) {
-    parts[i] = base;
-    if (remainder > 0) {
-      parts[i]++;
-      remainder--;
-    }
-    if (i == 0) {
-      offsets[i] = 0;
-    } else {
-      offsets[i] = offsets[i - 1] + parts[i - 1];
-    }
-  }
-}
-
-std::vector<std::vector<int>> voroshilov_v_convex_hull_components_all::PackIdxs(std::vector<Component>& components,
-                                                                                int image_width,
-                                                                                std::vector<int>& parts,
-                                                                                std::vector<int>& offsets,
-                                                                                std::vector<int>& comp_sizes) {
-  int worldsize = static_cast<int>(parts.size());
-  std::vector<std::vector<int>> split_idxs(worldsize);
-  for (int i = 0; i < worldsize; i++) {
-    int part = parts[i];
-    int offset = offsets[i];
-    int total_pixels = 0;
-    for (int j = 0; j < part; j++) {
-      total_pixels += comp_sizes[offset + j];
-    }
-    split_idxs[i].reserve(total_pixels);
-    for (int j = 0; j < part; j++) {
-      Component comp = components[offset + j];
-      for (Pixel& p : comp) {
-        split_idxs[i].push_back((p.y * image_width) + p.x);
-      }
-    }
-  }
-  return split_idxs;
 }
 
 std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllOMP(std::vector<Component>& components) {

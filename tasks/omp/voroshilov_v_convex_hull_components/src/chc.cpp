@@ -3,10 +3,8 @@
 #include <omp.h>
 
 #include <algorithm>
-#include <chrono>
 #include <cmath>
 #include <cstddef>
-#include <iostream>
 #include <stack>
 #include <utility>
 #include <vector>
@@ -270,8 +268,6 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
     }
   }
 
-  auto start = std::chrono::high_resolution_clock::now();
-
 #pragma omp parallel
   {
     int thread_id = omp_get_thread_num();
@@ -280,25 +276,9 @@ std::vector<Component> voroshilov_v_convex_hull_components_omp::FindComponentsOM
         FindComponentsInArea(image, start_y[thread_id], end_y[thread_id], index_offset[thread_id]);
   }
 
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double, std::milli> duration = end - start;
-  std::cout << "[OMP | parallel: " << duration.count() << " ms]" << std::endl;
-
-  start = std::chrono::high_resolution_clock::now();
-
   std::vector<Component> components = MergeVectors<Component>(threads_components);
 
-  end = std::chrono::high_resolution_clock::now();
-  duration = end - start;
-  std::cout << "[OMP | insert: " << duration.count() << " ms]" << std::endl;
-
-  start = std::chrono::high_resolution_clock::now();
-
   MergeComponentsAcrossAreas(components, image, area_height, end_y);
-
-  end = std::chrono::high_resolution_clock::now();
-  duration = end - start;
-  std::cout << "[OMP | merge: " << duration.count() << " ms]" << std::endl;
 
   return components;
 }

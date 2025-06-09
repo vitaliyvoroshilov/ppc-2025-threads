@@ -2,7 +2,6 @@
 
 #include <boost/serialization/access.hpp>
 #include <cstddef>
-#include <unordered_map>
 #include <vector>
 #include <boost/mpi/communicator.hpp>
 #include <boost/mpi/collectives.hpp>
@@ -83,12 +82,6 @@ std::vector<Component> FindComponentsInArea(Image& image, int start_y, int end_y
 
 std::vector<Component> FindComponentsOMP(Image& image);
 
-std::vector<std::pair<int, int>> GetLocalEquis(boost::mpi::communicator world, int rank, int width, std::vector<int>& local_pixels);
-
-std::vector<int> GetMapLabels(std::vector<std::vector<std::pair<int, int>>>& all_equis);
-
-std::vector<Component> SendComponentsToOwners(boost::mpi::communicator world, std::vector<Component>& local_components);
-
 std::vector<Component> SendExtraComponents(boost::mpi::communicator world, int start_y, int end_y, std::vector<Component>& local_components);
 
 std::vector<Component> FindComponentsMPIOMP(int height, int width, std::vector<int>& pixels_in);
@@ -98,11 +91,6 @@ int CheckRotation(Pixel& first, Pixel& second, Pixel& third);
 Pixel FindFarthestPixel(std::vector<Pixel>& pixels, LineSegment& line_segment);
 
 std::vector<Pixel> QuickHull(Component& component);
-
-void ComputePartition(int vec_size, int world_size, std::vector<int>& parts, std::vector<int>& offsets);
-
-std::vector<std::vector<int>> PackIdxs(std::vector<Component>& components, int image_width, std::vector<int>& parts,
-                                       std::vector<int>& offsets, std::vector<int>& comp_sizes);
 
 std::vector<Hull> QuickHullAllOMP(std::vector<Component>& components);
 
