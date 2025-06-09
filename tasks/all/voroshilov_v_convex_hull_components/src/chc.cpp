@@ -360,7 +360,7 @@ std::vector<int> voroshilov_v_convex_hull_components_all::GetMapLabels(std::vect
 }
 
 std::vector<Component> voroshilov_v_convex_hull_components_all::SendComponentsToOwners(boost::mpi::communicator world, std::vector<Component>& local_components) {
-  int rank = world.rank();
+  //int rank = world.rank();
   int num_procs = world.size();
 
   std::vector<std::vector<Component>> send_bufs(num_procs);
@@ -370,15 +370,17 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::SendComponentsTo
     int owner = global_label % num_procs;
     send_bufs[owner].push_back(std::move(comp));
   }
-
+/*
   for (int p = 0; p < num_procs; p++) {
     if (p == rank) {
       continue;
     }
     world.send(p, 10, send_bufs[p]);
   }
-
+*/
   std::vector<std::vector<Component>> recv_bufs(num_procs);
+  boost::mpi::all_to_all(world, send_bufs, recv_bufs);
+/*
   for (int p = 0; p < num_procs; p++) {
     if (p == rank) {
       recv_bufs[p] = std::move(send_bufs[p]);
@@ -386,7 +388,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::SendComponentsTo
       world.recv(p, 10, recv_bufs[p]);
     }
   }
-
+*/
   std::unordered_map<int, Component> merged;
   for (auto& buf : recv_bufs) {
     for (Component& comp : buf) {
@@ -409,6 +411,38 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::SendExtraCompone
   int rank = world.rank();
   int num_procs = world.size();
 
+  std::vector<Component> from_up;
+  if (rank > 0) {
+    world.recv(rank - 1, 2, from_up);
+  }
+
+  std::unordered_map<int, int> boundary_map;
+  for (int i = 0; i < (int)local_components.size(); i++) {
+    for (Pixel& p : local_components[i]) {
+      if (p.y == start_y) {
+        boundary_map[p.x] = i;
+      }
+    }
+  }
+
+  for (Component& comp : from_up) {
+    bool merged = false;
+    for (Pixel& p : comp) {
+      if (p.y == start_y) {
+        auto it = boundary_map.find(p.x);
+        if (it != boundary_map.end()) {
+          auto& dst = local_components[it->second];
+          dst.insert(dst.end(), std::make_move_iterator(comp.begin()), std::make_move_iterator(comp.end()));
+          merged = true;
+          break;
+        }
+      }
+    }
+    if (!merged) {
+      local_components.push_back(std::move(comp));
+    }
+  }
+
   std::vector<Component> to_keep;
   std::vector<Component> to_send;
 
@@ -429,15 +463,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::SendExtraCompone
     world.send(rank + 1, 2, to_send);
   }
 
-  std::vector<Component> from_up;
-  if (rank > 0) {
-    world.recv(rank - 1, 2, from_up);
-  }
-
-  std::vector<Component> local_full_components = std::move(to_keep);
-  local_full_components.insert(local_full_components.end(), std::make_move_iterator(from_up.begin()), std::make_move_iterator(from_up.end()));
-
-  return local_full_components;
+  return to_keep;
 }
 
 std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMPIOMP(int height, int width, std::vector<int>& pixels_in) {
@@ -513,18 +539,26 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMP
   std::cout << "[ALL <" << world.rank() << "> FindComponentsOMP: " << duration.count() << " ms]" << std::endl;
   start = std::chrono::high_resolution_clock::now();
 
-
+/*
   std::vector<std::pair<int,int>> local_equis = GetLocalEquis(world, rank, width, local_pixels);
+
+  std::cout << std::endl << world.rank() << " Ended GetLocalEquis" << std::endl;
 
   std::vector<std::vector<std::pair<int, int>>> all_equis;
   boost::mpi::gather(world, local_equis, all_equis, 0);
+
+  std::cout << std::endl << world.rank() << " Ended gather" << std::endl;
 
   std::vector<int> map_labels;
   if (rank == 0) {
     map_labels = GetMapLabels(all_equis);
   }
 
+  std::cout << std::endl << world.rank() << " Ended GetMapLabels" << std::endl;
+
   boost::mpi::broadcast(world, map_labels, 0);
+
+  std::cout << std::endl << world.rank() << " Ended Broadcast" << std::endl;
 
   for (Component& comp : local_components) {
     for (Pixel& p : comp) {
@@ -533,6 +567,11 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMP
   }
 
   std::vector<Component> local_full_components = SendComponentsToOwners(world, local_components);
+
+  std::cout << std::endl << world.rank() << " Ended SendComponentsToOwners" << std::endl;
+*/
+
+  std::vector<Component> local_full_components = SendExtraComponents(world, start_y[rank], end_y[rank], local_components);
 
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
