@@ -177,8 +177,9 @@ std::vector<T> voroshilov_v_convex_hull_components_all::MergeVectors(std::vector
   for (int i = 0; i < size; i++) {
     sizes[i] = (int)vectors[i].size();
   }
-
-  offsets[0] = 0;
+  if (offsets.size() >= 1) {
+    offsets[0] = 0; 
+  }
   for (int i = 0; i < size; i++) {
     offsets[i + 1] = offsets[i] + sizes[i];
   }
@@ -466,6 +467,9 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::SendExtraCompone
     int max_y = comp.front().y;
     for (Pixel& p : comp) {
       max_y = std::max(max_y, p.y);
+    }
+    if (rank == num_procs - 1) {
+      to_keep.push_back(std::move(comp));
     }
     if (max_y < end_y - 1) {
       to_keep.push_back(std::move(comp));
