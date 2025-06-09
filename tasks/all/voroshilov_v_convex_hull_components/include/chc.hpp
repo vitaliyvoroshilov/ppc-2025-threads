@@ -85,7 +85,9 @@ std::vector<Component> FindComponentsOMP(Image& image);
 
 std::vector<std::pair<int, int>> GetLocalEquis(boost::mpi::communicator world, int rank, int width, std::vector<int>& local_pixels);
 
-std::vector<int> GetMapLabels(std::vector<std::vector<std::pair<int, int>>>& all_equis);
+void RemapLabels(boost::mpi::communicator world, std::vector<std::vector<std::pair<int, int>>>& all_equis, std::vector<Component>& local_components);
+
+std::vector<Component> SendComponentsToOwners(boost::mpi::communicator world, std::vector<Component>& local_components);
 
 std::vector<Component> SendExtraComponents(boost::mpi::communicator world, int start_y, int end_y, std::vector<Component>& local_components);
 
