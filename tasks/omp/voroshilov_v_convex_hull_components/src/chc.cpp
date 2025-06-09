@@ -137,40 +137,25 @@ void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::ve
     root_to_indx[roots_unique[i]] = i;
   }
 
-  std::vector<size_t> sizes(r, 0);
-  for (int i = 0; i < n; i++) {
-    int indx = root_to_indx[all_roots[i]];
-    sizes[indx] += components[i].size();
-  }
-
-  std::vector<size_t> offsets(r + 1, 0);
-  for (int i = 0; i < r; i++) {
-    offsets[i + 1] = offsets[i] + sizes[i];
-  }
-  size_t s = offsets[r];
-
-  std::vector<Pixel> all_pixels(s);
-
-  std::vector<std::atomic<size_t>> cursor(r);
-  for (int i = 0; i < r; i++) {
-    cursor[i].store(offsets[i], std::memory_order_relaxed);
-  }
-
-#pragma omp parallel for schedule(dynamic)
+  std::vector<std::vector<int>> comps_by_root(r);
   for (int i = 0; i < n; i++) {
     int b = root_to_indx[all_roots[i]];
-    Component& comp = components[i];
-    for (Pixel& p : comp) {
-      size_t pos = cursor[b].fetch_add(1, std::memory_order_relaxed);
-      all_pixels[pos] = p;
-    }
+    comps_by_root[b].push_back(i);
   }
 
   std::vector<Component> merged(r);
+#pragma omp parallel for schedule(dynamic, 1)
   for (int i = 0; i < r; i++) {
-    size_t start = offsets[i];
-    size_t end = offsets[i + 1];
-    merged[i].assign(all_pixels.begin() + start, all_pixels.begin() + end);
+    size_t total = 0;
+    for (int indx : comps_by_root[i]) {
+      total += components[indx].size();
+    }
+    merged[i].reserve(total);
+
+    for (int indx : comps_by_root[i]) {
+      Component& src = components[indx];
+      merged[i].insert(merged[i].end(), src.begin(), src.end());
+    }
   }
 
   components = std::move(merged);
