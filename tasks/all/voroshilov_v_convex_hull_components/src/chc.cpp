@@ -25,7 +25,7 @@ Pixel::Pixel(int y_param, int x_param, int value_param) : y(y_param), x(x_param)
 bool Pixel::operator==(const int value_param) const { return value == value_param; }
 bool Pixel::operator==(const Pixel& other) const { return (y == other.y) && (x == other.x); }
 
-Image::Image(int hght, int wdth, std::vector<int> pxls) {
+Image::Image(int hght, int wdth, std::vector<int>& pxls) {
   height = hght;
   width = wdth;
   pixels.resize(height * width);
@@ -444,12 +444,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMP
   start = std::chrono::high_resolution_clock::now();
 
   int local_height = end_y[rank] - start_y[rank];
-  Image local_image;
-  if (local_height > 0) {
-    local_image = Image(local_height, width, local_pixels);
-  } else {
-    return {};
-  }
+  Image local_image(local_height, width, local_pixels);
 
   end = std::chrono::high_resolution_clock::now();
   duration = end - start;
@@ -582,10 +577,6 @@ std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllOMP(std::
 
 std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(
     std::vector<Component>& local_components) {
-  if (local_components.empty()) {
-    return {};
-  }
-
   boost::mpi::communicator world;
   int rank = world.rank();
 
