@@ -3,6 +3,7 @@
 #include <boost/mpi/communicator.hpp>
 #include <boost/serialization/access.hpp>  // NOLINT(misc-include-cleaner)
 #include <cstddef>
+#include <unordered_map>
 #include <vector>
 
 namespace voroshilov_v_convex_hull_components_all {
