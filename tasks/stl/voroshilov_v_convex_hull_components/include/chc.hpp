@@ -56,7 +56,8 @@ class UnionFind {
 
 void CheckBoundaryPixels(UnionFind& union_find, Image& image, int y, int x);
 
-void MergeComponentsAcrossAreas(std::vector<Component>& components, Image& image, int area_height, std::vector<int>& end_y);
+void MergeComponentsAcrossAreas(std::vector<Component>& components, Image& image, int area_height,
+                                std::vector<int>& end_y);
 
 template <typename T>
 std::vector<T> MergeVectors(std::vector<std::vector<T>>& vectors);

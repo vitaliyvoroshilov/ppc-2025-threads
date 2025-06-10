@@ -5,8 +5,8 @@
 #include <algorithm>
 #include <boost/mpi/collectives.hpp>
 #include <boost/mpi/communicator.hpp>
-#include <boost/serialization/vector.hpp>  // NOLINT(misc-include-cleaner)
 #include <boost/serialization/utility.hpp>  // NOLINT(misc-include-cleaner)
+#include <boost/serialization/vector.hpp>   // NOLINT(misc-include-cleaner)
 #include <cmath>
 #include <cstddef>
 #include <iterator>
@@ -99,13 +99,13 @@ void voroshilov_v_convex_hull_components_all::MergeComponentsAcrossAreas(std::ve
   if (components.empty()) {
     return;
   }
-  
+
   int num_threads = omp_get_max_threads();
   UnionFind union_find((num_threads * 1000) + 3);
-  
+
   int width = image.width;
   int height = image.height;
-  
+
   for (int endy : end_y) {
     int y = endy - 1;
     if (y != height - 1) {
@@ -122,7 +122,7 @@ void voroshilov_v_convex_hull_components_all::MergeComponentsAcrossAreas(std::ve
     int label = components[i][0].value;
     all_roots.push_back(union_find.FindRoot(label));
   }
-  
+
   std::vector<int> roots_unique = all_roots;
   std::sort(roots_unique.begin(), roots_unique.end());
   roots_unique.erase(std::unique(roots_unique.begin(), roots_unique.end()), roots_unique.end());
@@ -168,12 +168,12 @@ std::vector<T> voroshilov_v_convex_hull_components_all::MergeVectors(std::vector
     sizes[i] = (int)vectors[i].size();
   }
   if (offsets.size() >= 1) {
-    offsets[0] = 0; 
+    offsets[0] = 0;
   }
   for (int i = 0; i < size; i++) {
     offsets[i + 1] = offsets[i] + sizes[i];
   }
-  
+
   std::vector<T> vec(offsets[size]);
 
   for (int i = 0; i < size; i++) {
@@ -288,7 +288,8 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsOM
   return components;
 }
 
-std::vector<Component> voroshilov_v_convex_hull_components_all::SendExtraComponents(boost::mpi::communicator world, int start_y, int end_y, std::vector<Component>& local_components) {
+std::vector<Component> voroshilov_v_convex_hull_components_all::SendExtraComponents(
+    boost::mpi::communicator world, int start_y, int end_y, std::vector<Component>& local_components) {
   int rank = world.rank();
   int num_procs = world.size();
 
@@ -320,7 +321,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::SendExtraCompone
           if (it != boundary_map.end()) {
             for (int i_loc : it->second) {
               uf.Union(i_loc, loc_size + i);
-            }   
+            }
           }
         }
       }
@@ -329,14 +330,16 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::SendExtraCompone
 
   std::unordered_map<int, std::vector<Pixel>> merged_pixels;
   merged_pixels.reserve(loc_size + up_size);
-  for (int i = 0; i < loc_size; i++){ 
+  for (int i = 0; i < loc_size; i++) {
     int r = uf.FindRoot(i);
-    merged_pixels[r].insert(merged_pixels[r].end(), std::make_move_iterator(local_components[i].begin()), std::make_move_iterator(local_components[i].end()));
+    merged_pixels[r].insert(merged_pixels[r].end(), std::make_move_iterator(local_components[i].begin()),
+                            std::make_move_iterator(local_components[i].end()));
   }
   for (int i = 0; i < up_size; i++) {
     int idx = loc_size + i;
     int r = uf.FindRoot(idx);
-    merged_pixels[r].insert(merged_pixels[r].end(), std::make_move_iterator(from_up[i].begin()), std::make_move_iterator(from_up[i].end()));
+    merged_pixels[r].insert(merged_pixels[r].end(), std::make_move_iterator(from_up[i].begin()),
+                            std::make_move_iterator(from_up[i].end()));
   }
 
   std::vector<Component> to_keep;
@@ -362,9 +365,10 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::SendExtraCompone
   return to_keep;
 }
 
-std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMPIOMP(int height, int width, std::vector<int>& pixels_in) {
+std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMPIOMP(int height, int width,
+                                                                                     std::vector<int>& pixels_in) {
   boost::mpi::communicator world;
-  
+
   int num_procs = world.size();
   int rank = world.rank();
 
@@ -376,7 +380,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMP
   std::vector<int> start_y(num_procs, 0);
   std::vector<int> end_y(num_procs);
   std::vector<int> index_offset(num_procs);
-  
+
   if (num_procs == 1) {
     end_y[0] = height;
     index_offset[0] = 2;
@@ -397,17 +401,17 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMP
       index_offset[i] = (i * 1000) + 2;
     }
   }
-  
+
   std::vector<int> sizes(num_procs);
   std::vector<int> displs(num_procs);
   for (int i = 0; i < num_procs; i++) {
     sizes[i] = (end_y[i] - start_y[i]) * width;
     displs[i] = start_y[i] * width;
   }
-  
+
   std::vector<int> local_pixels(sizes[rank]);
   boost::mpi::scatterv(world, pixels_in, sizes, displs, local_pixels.data(), static_cast<int>(local_pixels.size()), 0);
-  
+
   int local_height = end_y[rank] - start_y[rank];
   Image local_image(local_height, width, local_pixels);
 
@@ -420,7 +424,8 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMP
     }
   }
 
-  std::vector<Component> local_full_components = SendExtraComponents(world, start_y[rank], end_y[rank], local_components);
+  std::vector<Component> local_full_components =
+      SendExtraComponents(world, start_y[rank], end_y[rank], local_components);
 
   return local_full_components;
 }
@@ -519,10 +524,11 @@ std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllOMP(std::
   return hulls;
 }
 
-std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(std::vector<Component>& local_components) {
+std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(
+    std::vector<Component>& local_components) {
   boost::mpi::communicator world;
   int rank = world.rank();
-  
+
   std::vector<Hull> local_hulls = QuickHullAllOMP(local_components);
 
   std::vector<std::vector<Hull>> gathered_hulls;

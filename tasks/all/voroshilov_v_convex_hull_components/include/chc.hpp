@@ -1,10 +1,9 @@
 #pragma once
 
-#include <boost/serialization/access.hpp>
+#include <boost/mpi/communicator.hpp>
+#include <boost/serialization/access.hpp>  // NOLINT(misc-include-cleaner)
 #include <cstddef>
 #include <vector>
-#include <boost/mpi/communicator.hpp>
-#include <boost/mpi/collectives.hpp>
 
 namespace voroshilov_v_convex_hull_components_all {
 
@@ -82,7 +81,8 @@ std::vector<Component> FindComponentsInArea(Image& image, int start_y, int end_y
 
 std::vector<Component> FindComponentsOMP(Image& image);
 
-std::vector<Component> SendExtraComponents(boost::mpi::communicator world, int start_y, int end_y, std::vector<Component>& local_components);
+std::vector<Component> SendExtraComponents(boost::mpi::communicator world, int start_y, int end_y,
+                                           std::vector<Component>& local_components);
 
 std::vector<Component> FindComponentsMPIOMP(int height, int width, std::vector<int>& pixels_in);
 

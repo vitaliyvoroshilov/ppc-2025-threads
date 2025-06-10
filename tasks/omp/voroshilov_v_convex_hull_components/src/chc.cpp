@@ -5,10 +5,10 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <iterator>
 #include <stack>
 #include <utility>
 #include <vector>
-#include <iterator>
 
 using namespace voroshilov_v_convex_hull_components_omp;
 
@@ -95,13 +95,13 @@ void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::ve
   if (components.empty()) {
     return;
   }
-  
+
   int num_threads = omp_get_max_threads();
   UnionFind union_find((num_threads * 1000) + 3);
-  
+
   int width = image.width;
   int height = image.height;
-  
+
   for (int endy : end_y) {
     int y = endy - 1;
     if (y != height - 1) {
@@ -118,7 +118,7 @@ void voroshilov_v_convex_hull_components_omp::MergeComponentsAcrossAreas(std::ve
     int label = components[i][0].value;
     all_roots.push_back(union_find.FindRoot(label));
   }
-  
+
   std::vector<int> roots_unique = all_roots;
   std::sort(roots_unique.begin(), roots_unique.end());
   roots_unique.erase(std::unique(roots_unique.begin(), roots_unique.end()), roots_unique.end());
@@ -168,7 +168,7 @@ std::vector<T> voroshilov_v_convex_hull_components_omp::MergeVectors(std::vector
   for (int i = 0; i < size; i++) {
     offsets[i + 1] = offsets[i] + sizes[i];
   }
-  
+
   std::vector<T> vec(offsets[size]);
 
   for (int i = 0; i < size; i++) {

@@ -33,8 +33,7 @@ LineSegment::LineSegment(Pixel& a_param, Pixel& b_param) : a(a_param), b(b_param
 
 bool Hull::operator==(const Hull& other) const { return pixels == other.pixels; }
 
-Component voroshilov_v_convex_hull_components_seq::DepthComponentSearch(Pixel& start_pixel, Image& image,
-                                                                        int index) {
+Component voroshilov_v_convex_hull_components_seq::DepthComponentSearch(Pixel& start_pixel, Image& image, int index) {
   const int step_y[8] = {1, 1, 1, 0, 0, -1, -1, -1};  // Offsets by Y (up, stand, down)
   const int step_x[8] = {-1, 0, 1, -1, 1, -1, 0, 1};  // Offsets by X (left, stand, right)
   std::stack<Pixel> stack;
@@ -73,7 +72,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_seq::FindComponents(I
       }
     }
   }
-  
+
   if (components.empty()) {
     return {};
   }
