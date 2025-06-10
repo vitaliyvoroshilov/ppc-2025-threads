@@ -197,14 +197,18 @@ std::vector<int> voroshilov_v_convex_hull_components_all::PackPixelsToIndexes(
     int width) 
 {
     int vecs_count = static_cast<int>(vectors_pixels.size());
+    // Вычисляем общий размер буфера: 1 элемент для vecs_count,
+    // для каждой компоненты: 1 элемент для её размера + 2*sz для idx и value
     int total_size = 1;
     for (const auto& vec : vectors_pixels) {
-        total_size += 1;
-        total_size += 2 * static_cast<int>(vec.size());
+        total_size += 1;                  // для записи vec.size()
+        total_size += 2 * static_cast<int>(vec.size()); // для пары (idx, value)
     }
     std::vector<int> indexes;
     indexes.reserve(total_size);
+    // 1) число векторов
     indexes.push_back(vecs_count);
+    // 2) для каждой: size, затем пары (idx, value)
     for (const auto& vec : vectors_pixels) {
         int sz = static_cast<int>(vec.size());
         indexes.push_back(sz);
@@ -214,6 +218,8 @@ std::vector<int> voroshilov_v_convex_hull_components_all::PackPixelsToIndexes(
             indexes.push_back(p.value);
         }
     }
+    // отладочный assert: 
+    // assert((int)indexes.size() == total_size);
     return indexes;
 }
 
@@ -240,6 +246,7 @@ std::vector<std::vector<Pixel>> voroshilov_v_convex_hull_components_all::UnpackI
         if (sz < 0) {
             break;
         }
+        // Нужно 2*sz чисел далее
         if (pos + 2 * sz > n) {
             break;
         }
@@ -647,43 +654,50 @@ std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllOMP(std::
 }
 
 std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(
-    std::vector<Component>& local_components, int width) {
-  boost::mpi::communicator world;
-  int rank = world.rank();
-  int num_procs = world.size();
+    std::vector<Component>& local_components,
+    int width) 
+{
+    boost::mpi::communicator world;
+    int rank = world.rank();
+    int num_procs = world.size();
 
-  if (num_procs == 1) {
-    std::vector<Hull> hulls = QuickHullAllOMP(local_components);
-    return hulls;
-  }
-
-  std::vector<Hull> local_hulls = QuickHullAllOMP(local_components);
-
-  std::vector<int> local_indexes = PackPixelsToIndexes(local_hulls, width);
-
-  std::vector<std::vector<int>> gathered_indexes;
-  // NOLINTNEXTLINE(misc-include-cleaner)
-  boost::mpi::gather(world, local_indexes, gathered_indexes, 0);
-
-  if (rank == 0) {
-    std::vector<std::vector<Hull>> gathered_hulls;
-    gathered_hulls.resize(num_procs);
-    for (int p = 0; p < num_procs; p++) {
-      const std::vector<int>& buf = gathered_indexes[p];
-      auto hulls_p_pixels = UnpackIndexesToPixels(buf, width);
-      std::vector<Hull> hulls_p;
-      hulls_p.reserve(hulls_p_pixels.size());
-      for (auto& vec_pix : hulls_p_pixels) {
-        hulls_p.push_back(std::move(vec_pix));
-      }
-      gathered_hulls.push_back(std::move(hulls_p));
+    if (num_procs == 1) {
+        return QuickHullAllOMP(local_components);
     }
 
-    std::vector<Hull> result_hulls = MergeVectors<Hull>(gathered_hulls);
-    return result_hulls;
-  }
+    // Локально строим hull’ы
+    std::vector<Hull> local_hulls = QuickHullAllOMP(local_components);
 
-  return {};
+    // Упаковываем их с value
+    std::vector<int> local_indexes = PackPixelsToIndexes(local_hulls, width);
+
+    // Собираем на root
+    std::vector<std::vector<int>> gathered_indexes;
+    boost::mpi::gather(world, local_indexes, gathered_indexes, 0);
+
+    if (rank == 0) {
+        // Распаковываем каждый буфер и собираем в gathered_hulls
+        std::vector<std::vector<Hull>> gathered_hulls;
+        gathered_hulls.reserve(num_procs);
+        for (int p = 0; p < num_procs; ++p) {
+            const std::vector<int>& buf = gathered_indexes[p];
+            // Распаковка
+            auto hulls_p_pixels = UnpackIndexesToPixels(buf, width);
+            // Переносим в Hull
+            std::vector<Hull> hulls_p;
+            hulls_p.reserve(hulls_p_pixels.size());
+            for (auto& vec_pix : hulls_p_pixels) {
+                hulls_p.push_back(std::move(vec_pix));
+            }
+            gathered_hulls.push_back(std::move(hulls_p));
+        }
+        // Объединяем все hull’ы
+        std::vector<Hull> result_hulls = MergeVectors<Hull>(gathered_hulls);
+        return result_hulls;
+    }
+
+    // Остальные ранки возвращают пустой вектор
+    return {};
 }
 
 void voroshilov_v_convex_hull_components_all::PackHulls(std::vector<Hull>& hulls, int width, int height,
