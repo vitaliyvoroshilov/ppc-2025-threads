@@ -223,7 +223,7 @@ std::vector<std::vector<Pixel>> voroshilov_v_convex_hull_components_all::UnpackI
     return {};
   }
   int vecs_count = merged_indexes[pos++];
-  result.reserve(vecs_count);
+  vectors_pixels.reserve(vecs_count);
   for (int h = 0; h < vecs_count; ++h) {
     if (pos >= n) {
       break;
@@ -243,7 +243,7 @@ std::vector<std::vector<Pixel>> voroshilov_v_convex_hull_components_all::UnpackI
       int x = idx % width;
       vec.emplace_back(y, x);
     }
-    result.push_back(std::move(vec));
+    vectors_pixels.push_back(std::move(vec));
   }
   return vectors_pixels;
 }
@@ -657,9 +657,14 @@ std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(
   boost::mpi::gather(world, local_indexes, gathered_indexes, 0);
 
   if (rank == 0) {
-    std::vector<int> merged_indexes = MergeVectors<int>(gathered_indexes);
+    std::vector<std::vector<Hull>> gathered_hulls;
+    gathered_hulls.resize(num_procs);
+    for (int p = 0; p < num_procs; p++) {
+      gathered_hulls[p].reserve(gathered_indexes[p].size());
+      gathered_hulls[p] = UnpackIndexesToPixels(gathered_indexes[p], width);
+    }
 
-    std::vector<Hull> result_hulls = UnpackIndexesToPixels(merged_indexes, width);
+    std::vector<Hull> result_hulls = MergeVectors<Hull>(gathered_hulls);
     return result_hulls;
   }
 
