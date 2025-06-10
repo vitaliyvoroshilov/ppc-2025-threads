@@ -141,7 +141,7 @@ void voroshilov_v_convex_hull_components_stl::MergeComponentsAcrossAreas(std::ve
 
   int max_root = -1;
   if (!roots_unique.empty()) {
-    int max_root = roots_unique.back();
+    max_root = roots_unique.back();
   }
   std::vector<int> root_to_indx(max_root + 1, -1);
   for (int i = 0; i < r; i++) {

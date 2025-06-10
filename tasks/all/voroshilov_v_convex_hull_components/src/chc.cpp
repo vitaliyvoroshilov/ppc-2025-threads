@@ -133,7 +133,7 @@ void voroshilov_v_convex_hull_components_all::MergeComponentsAcrossAreas(std::ve
 
   int max_root = -1;
   if (!roots_unique.empty()) {
-    int max_root = roots_unique.back();
+    max_root = roots_unique.back();
   }
   std::vector<int> root_to_indx(max_root + 1, -1);
   for (int i = 0; i < r; i++) {
@@ -295,7 +295,8 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsOM
 }
 
 std::unordered_map<int, std::vector<Pixel>> voroshilov_v_convex_hull_components_all::UnionComponents(
-    int start_y, int end_y, std::vector<Component>& local_components, std::vector<Component>& from_up) {
+    int start_y, int end_y, std::vector<Component>& local_components, std::vector<Component>& from_up,
+    std::unordered_map<int, std::vector<int>>& boundary_map) {
   int loc_size = (int)local_components.size();
   int up_size = (int)from_up.size();
 
@@ -354,7 +355,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::SendExtraCompone
   }
 
   std::unordered_map<int, std::vector<Pixel>> merged_pixels =
-      UnionComponents(start_y, end_y, local_components, from_up);
+      UnionComponents(start_y, end_y, local_components, from_up, boundary_map);
 
   std::vector<Component> to_keep;
   std::vector<Component> to_send;
