@@ -7,8 +7,10 @@
 #include <boost/mpi/communicator.hpp>
 #include <boost/serialization/utility.hpp>  // NOLINT(misc-include-cleaner)
 #include <boost/serialization/vector.hpp>   // NOLINT(misc-include-cleaner)
+#include <chrono>
 #include <cmath>
 #include <cstddef>
+#include <iostream>
 #include <iterator>
 #include <stack>
 #include <unordered_map>
@@ -23,7 +25,7 @@ Pixel::Pixel(int y_param, int x_param, int value_param) : y(y_param), x(x_param)
 bool Pixel::operator==(const int value_param) const { return value == value_param; }
 bool Pixel::operator==(const Pixel& other) const { return (y == other.y) && (x == other.x); }
 
-Image::Image(int hght, int wdth, std::vector<int>& pxls) {
+Image::Image(int hght, int wdth, std::vector<int> pxls) {
   height = hght;
   width = wdth;
   pixels.resize(height * width);
@@ -383,6 +385,8 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMP
                                                                                      std::vector<int>& pixels_in) {
   boost::mpi::communicator world;
 
+  auto start = std::chrono::high_resolution_clock::now();
+
   int num_procs = world.size();
   int rank = world.rank();
 
@@ -425,14 +429,38 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMP
     displs[i] = start_y[i] * width;
   }
 
+  auto end = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double, std::milli> duration = end - start;
+  std::cout << "[ALL <" << world.rank() << "> Distributions: " << duration.count() << " ms]" << std::endl;
+  start = std::chrono::high_resolution_clock::now();
+
   std::vector<int> local_pixels(sizes[rank]);
   // NOLINTNEXTLINE(misc-include-cleaner)
   boost::mpi::scatterv(world, pixels_in, sizes, displs, local_pixels.data(), static_cast<int>(local_pixels.size()), 0);
 
+  end = std::chrono::high_resolution_clock::now();
+  duration = end - start;
+  std::cout << "[ALL <" << world.rank() << "> Scatterv: " << duration.count() << " ms]" << std::endl;
+  start = std::chrono::high_resolution_clock::now();
+
   int local_height = end_y[rank] - start_y[rank];
-  Image local_image(local_height, width, local_pixels);
+  if (local_height > 0) {
+    Image local_image(local_height, width, local_pixels);
+  } else {
+    return {};
+  }
+
+  end = std::chrono::high_resolution_clock::now();
+  duration = end - start;
+  std::cout << "[ALL <" << world.rank() << "> LocalImage: " << duration.count() << " ms]" << std::endl;
+  start = std::chrono::high_resolution_clock::now();
 
   std::vector<Component> local_components = FindComponentsOMP(local_image);
+
+  end = std::chrono::high_resolution_clock::now();
+  duration = end - start;
+  std::cout << "[ALL <" << world.rank() << "> FindComponentsOMP: " << duration.count() << " ms]" << std::endl;
+  start = std::chrono::high_resolution_clock::now();
 
   int y_offset = start_y[rank];
   for (Component& comp : local_components) {
@@ -441,8 +469,18 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMP
     }
   }
 
+  end = std::chrono::high_resolution_clock::now();
+  duration = end - start;
+  std::cout << "[ALL <" << world.rank() << "> OffsetImage: " << duration.count() << " ms]" << std::endl;
+  start = std::chrono::high_resolution_clock::now();
+
   std::vector<Component> local_full_components =
       SendExtraComponents(world, start_y[rank], end_y[rank], local_components);
+
+  end = std::chrono::high_resolution_clock::now();
+  duration = end - start;
+  std::cout << "[ALL <" << world.rank() << "> SendExtra: " << duration.count() << " ms]" << std::endl;
+  start = std::chrono::high_resolution_clock::now();
 
   return local_full_components;
 }
