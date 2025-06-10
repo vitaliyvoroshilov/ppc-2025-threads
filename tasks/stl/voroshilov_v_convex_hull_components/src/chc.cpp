@@ -134,11 +134,15 @@ void voroshilov_v_convex_hull_components_stl::MergeComponentsAcrossAreas(std::ve
   }
 
   std::vector<int> roots_unique = all_roots;
-  std::sort(roots_unique.begin(), roots_unique.end());
-  roots_unique.erase(std::unique(roots_unique.begin(), roots_unique.end()), roots_unique.end());
+  std::ranges::sort(roots_unique);
+  auto it = std::ranges::unique(roots_unique).begin();
+  roots_unique.erase(it, roots_unique.end());
   int r = (int)roots_unique.size();
 
-  int max_root = roots_unique.back();
+  int max_root = -1;
+  if (!roots_unique.empty()) {
+    int max_root = roots_unique.back();
+  }
   std::vector<int> root_to_indx(max_root + 1, -1);
   for (int i = 0; i < r; i++) {
     root_to_indx[roots_unique[i]] = i;
@@ -167,7 +171,7 @@ void voroshilov_v_convex_hull_components_stl::MergeComponentsAcrossAreas(std::ve
 
         for (int indx : comps_by_root[i]) {
           Component& src = components[indx];
-          std::move(src.begin(), src.end(), std::back_inserter(merged[i]));
+          std::ranges::move(src, std::back_inserter(merged[i]));
         }
       }
     });

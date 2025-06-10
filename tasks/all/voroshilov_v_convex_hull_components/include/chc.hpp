@@ -81,7 +81,11 @@ std::vector<Component> FindComponentsInArea(Image& image, int start_y, int end_y
 
 std::vector<Component> FindComponentsOMP(Image& image);
 
-std::vector<Component> SendExtraComponents(boost::mpi::communicator world, int start_y, int end_y,
+std::unordered_map<int, std::vector<Pixel>> UnionComponents(int start_y, int end_y,
+                                                            std::vector<Component>& local_components,
+                                                            std::vector<Component>& from_up);
+
+std::vector<Component> SendExtraComponents(boost::mpi::communicator& world, int start_y, int end_y,
                                            std::vector<Component>& local_components);
 
 std::vector<Component> FindComponentsMPIOMP(int height, int width, std::vector<int>& pixels_in);
