@@ -582,7 +582,7 @@ std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllOMP(std::
 
 std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(
     std::vector<Component>& local_components) {
-  if (components.empty()) {
+  if (local_components.empty()) {
     return {};
   }
 
