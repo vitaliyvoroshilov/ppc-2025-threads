@@ -76,9 +76,9 @@ void MergeComponentsAcrossAreas(std::vector<Component>& components, Image& image
 template <typename T>
 std::vector<T> MergeVectors(std::vector<std::vector<T>>& vectors);
 
-std::vector<int> PackPixelsToIndexes(std::vector<Pixel>& pixels, int width);
+std::vector<int> PackPixelsToIndexes(std::vector<std::vector<Pixel>>& vectors_pixels, int width);
 
-std::vector<Pixel> UnpackIndexesToPixels(std::vector<int>& indexes, int width);
+std::vector<std::vector<Pixel>> UnpackIndexesToPixels(std::vector<int>& merged_indexes, int width);
 
 Component DepthComponentSearchInArea(Pixel start_pixel, Image& image, int index, int start_y, int end_y);
 
