@@ -3,7 +3,6 @@
 #include <omp.h>
 
 #include <algorithm>
-// NOLINTNEXTLINE(misc-include-cleaner)
 #include <boost/mpi/collectives.hpp>
 #include <boost/mpi/communicator.hpp>
 #include <boost/serialization/utility.hpp>  // NOLINT(misc-include-cleaner)
@@ -387,7 +386,9 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMP
   int num_procs = world.size();
   int rank = world.rank();
 
+  // NOLINTNEXTLINE(misc-include-cleaner)
   boost::mpi::broadcast(world, height, 0);
+  // NOLINTNEXTLINE(misc-include-cleaner)
   boost::mpi::broadcast(world, width, 0);
 
   int area_height = height / num_procs;
@@ -425,6 +426,7 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMP
   }
 
   std::vector<int> local_pixels(sizes[rank]);
+  // NOLINTNEXTLINE(misc-include-cleaner)
   boost::mpi::scatterv(world, pixels_in, sizes, displs, local_pixels.data(), static_cast<int>(local_pixels.size()), 0);
 
   int local_height = end_y[rank] - start_y[rank];
@@ -547,6 +549,7 @@ std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(
   std::vector<Hull> local_hulls = QuickHullAllOMP(local_components);
 
   std::vector<std::vector<Hull>> gathered_hulls;
+  // NOLINTNEXTLINE(misc-include-cleaner)
   boost::mpi::gather(world, local_hulls, gathered_hulls, 0);
 
   if (rank == 0) {
