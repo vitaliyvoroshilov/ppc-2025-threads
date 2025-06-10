@@ -444,8 +444,9 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMP
   start = std::chrono::high_resolution_clock::now();
 
   int local_height = end_y[rank] - start_y[rank];
+  Image local_image;
   if (local_height > 0) {
-    Image local_image(local_height, width, local_pixels);
+    local_image = Image(local_height, width, local_pixels);
   } else {
     return {};
   }
