@@ -192,60 +192,69 @@ std::vector<T> voroshilov_v_convex_hull_components_all::MergeVectors(std::vector
   return vec;
 }
 
-std::vector<int> voroshilov_v_convex_hull_components_all::PackPixelsToIndexes(std::vector<std::vector<Pixel>>& vectors_pixels, int width) {
-  int total_size = 1;
-  std::vector<int> sizes(vectors_pixels.size());
-  for (std::vector<Pixel>& vec : vectors_pixels) {
-    sizes.push_back(vec.size());
-    total_size++;
-    total_size += (int)vec.size();
-  }
-  
-  std::vector<int> indexes;
-  indexes.reserve(total_size);
-  indexes.push_back(vectors_pixels.size());
-  for (std::vector<Pixel>& vec : vectors_pixels) {
-    int size = (int)vec.size();
-    indexes.push_back(size);
-    for (Pixel& p : vec) {
-      int index = (p.y * width) + p.x;
-      indexes.push_back(index);
+std::vector<int> voroshilov_v_convex_hull_components_all::PackPixelsToIndexes(
+    const std::vector<std::vector<Pixel>>& vectors_pixels,
+    int width) 
+{
+    int vecs_count = static_cast<int>(vectors_pixels.size());
+    int total_size = 1;
+    for (const auto& vec : vectors_pixels) {
+        total_size += 1;
+        total_size += 2 * static_cast<int>(vec.size());
     }
-  }
-  return indexes;
+    std::vector<int> indexes;
+    indexes.reserve(total_size);
+    indexes.push_back(vecs_count);
+    for (const auto& vec : vectors_pixels) {
+        int sz = static_cast<int>(vec.size());
+        indexes.push_back(sz);
+        for (const Pixel& p : vec) {
+            int idx = p.y * width + p.x;
+            indexes.push_back(idx);
+            indexes.push_back(p.value);
+        }
+    }
+    return indexes;
 }
 
-std::vector<std::vector<Pixel>> voroshilov_v_convex_hull_components_all::UnpackIndexesToPixels(std::vector<int>& merged_indexes, int width) {
-  std::vector<std::vector<Pixel>> vectors_pixels;
-  int n = (int)merged_indexes.size();
-  int pos = 0;
-  if (pos >= n) {
-    return {};
-  }
-  int vecs_count = merged_indexes[pos++];
-  vectors_pixels.reserve(vecs_count);
-  for (int h = 0; h < vecs_count; ++h) {
+std::vector<std::vector<Pixel>> voroshilov_v_convex_hull_components_all::UnpackIndexesToPixels(
+    const std::vector<int>& merged_indexes,
+    int width) 
+{
+    std::vector<std::vector<Pixel>> vectors_pixels;
+    int n = static_cast<int>(merged_indexes.size());
+    int pos = 0;
     if (pos >= n) {
-      break;
+        return {};
     }
-    int sz = merged_indexes[pos++];
-    if (sz < 0) {
-      break;
+    int vecs_count = merged_indexes[pos++];
+    if (vecs_count <= 0) {
+        return {};
     }
-    if (pos + sz > n) {
-      break;
+    vectors_pixels.reserve(vecs_count);
+    for (int h = 0; h < vecs_count; ++h) {
+        if (pos >= n) {
+            break;
+        }
+        int sz = merged_indexes[pos++];
+        if (sz < 0) {
+            break;
+        }
+        if (pos + 2 * sz > n) {
+            break;
+        }
+        std::vector<Pixel> vec;
+        vec.reserve(sz);
+        for (int i = 0; i < sz; ++i) {
+            int idx = merged_indexes[pos++];
+            int value = merged_indexes[pos++];
+            int y = idx / width;
+            int x = idx % width;
+            vec.emplace_back(y, x, value);
+        }
+        vectors_pixels.push_back(std::move(vec));
     }
-    std::vector<Pixel> vec;
-    vec.reserve(sz);
-    for (int i = 0; i < sz; i++) {
-      int idx = merged_indexes[pos++];
-      int y = idx / width;
-      int x = idx % width;
-      vec.emplace_back(y, x);
-    }
-    vectors_pixels.push_back(std::move(vec));
-  }
-  return vectors_pixels;
+    return vectors_pixels;
 }
 
 Component voroshilov_v_convex_hull_components_all::DepthComponentSearchInArea(Pixel start_pixel, Image& image,
@@ -660,8 +669,14 @@ std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(
     std::vector<std::vector<Hull>> gathered_hulls;
     gathered_hulls.resize(num_procs);
     for (int p = 0; p < num_procs; p++) {
-      gathered_hulls[p].reserve(gathered_indexes[p].size());
-      gathered_hulls[p] = UnpackIndexesToPixels(gathered_indexes[p], width);
+      const std::vector<int>& buf = gathered_indexes[p];
+      auto hulls_p_pixels = UnpackIndexesToPixels(buf, width);
+      std::vector<Hull> hulls_p;
+      hulls_p.reserve(hulls_p_pixels.size());
+      for (auto& vec_pix : hulls_p_pixels) {
+        hulls_p.push_back(std::move(vec_pix));
+      }
+      gathered_hulls.push_back(std::move(hulls_p));
     }
 
     std::vector<Hull> result_hulls = MergeVectors<Hull>(gathered_hulls);
