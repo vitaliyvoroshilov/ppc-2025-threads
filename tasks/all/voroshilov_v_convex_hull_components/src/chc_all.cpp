@@ -38,7 +38,7 @@ bool voroshilov_v_convex_hull_components_all::ChcTaskALL::PreProcessingImpl() {
 bool voroshilov_v_convex_hull_components_all::ChcTaskALL::RunImpl() {
   std::vector<Component> local_components = FindComponentsMPIOMP(height_in_, width_in_, pixels_in_);
 
-  hulls_out_ = QuickHullAllMPIOMP(local_components);
+  hulls_out_ = QuickHullAllMPIOMP(local_components, width_in_);
 
   return true;
 }

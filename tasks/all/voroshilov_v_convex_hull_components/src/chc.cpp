@@ -192,6 +192,25 @@ std::vector<T> voroshilov_v_convex_hull_components_all::MergeVectors(std::vector
   return vec;
 }
 
+std::vector<int> voroshilov_v_convex_hull_components_all::PackPixelsToIndexes(std::vector<Pixel>& pixels, int width) {
+  std::vector<int> indexes(pixels.size());
+  for (int i = 0; i < (int)indexes.size(); i++) {
+    int index = (pixels[i].y * width) + pixels[i].x;
+    indexes[i] = index;
+  }
+  return indexes;
+}
+
+std::vector<Pixel> voroshilov_v_convex_hull_components_all::UnpackIndexesToPixels(std::vector<int>& indexes, int width) {
+  std::vector<Pixel> pixels(indexes.size());
+  for (int i = 0; i < (int)indexes.size(); i++) {
+    int y = indexes[i] / width;
+    int x = indexes[i] % width;
+    pixels[i] = Pixel(y, x);
+  }
+  return pixels;
+}
+
 Component voroshilov_v_convex_hull_components_all::DepthComponentSearchInArea(Pixel start_pixel, Image& image,
                                                                               int index, int start_y, int end_y) {
   const int step_y[8] = {1, 1, 1, 0, 0, -1, -1, -1};  // Offsets by Y (up, stand, down)
@@ -390,6 +409,12 @@ std::vector<Component> voroshilov_v_convex_hull_components_all::FindComponentsMP
   int num_procs = world.size();
   int rank = world.rank();
 
+  if (world.size() == 1) {
+    Image image(height, width, pixels_in);
+    std::vector<Component> components = FindComponentsOMP(image);
+    return components;
+  }
+
   // NOLINTNEXTLINE(misc-include-cleaner)
   boost::mpi::broadcast(world, height, 0);
   // NOLINTNEXTLINE(misc-include-cleaner)
@@ -576,18 +601,28 @@ std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllOMP(std::
 }
 
 std::vector<Hull> voroshilov_v_convex_hull_components_all::QuickHullAllMPIOMP(
-    std::vector<Component>& local_components) {
+    std::vector<Component>& local_components, int width) {
   boost::mpi::communicator world;
   int rank = world.rank();
+  int num_procs = world.size();
+
+  if (num_procs == 1) {
+    std::vector<Hull> hulls = QuickHullAllOMP(local_components);
+    return hulls;
+  }
 
   std::vector<Hull> local_hulls = QuickHullAllOMP(local_components);
 
-  std::vector<std::vector<Hull>> gathered_hulls;
+  std::vector<int> local_indexes = PackPixelsToIndexes(local_hulls, width);
+
+  std::vector<std::vector<int>> gathered_indexes;
   // NOLINTNEXTLINE(misc-include-cleaner)
-  boost::mpi::gather(world, local_hulls, gathered_hulls, 0);
+  boost::mpi::gather(world, local_indexes, gathered_indexes, 0);
 
   if (rank == 0) {
-    std::vector<Hull> result_hulls = MergeVectors<Hull>(gathered_hulls);
+    std::vector<int> merged_indexes = MergeVectors<int>(gathered_indexes);
+
+    std::vector<Hull> result_hulls = UnpackIndexesToPixels(merged_indexes, width);
     return result_hulls;
   }
 
