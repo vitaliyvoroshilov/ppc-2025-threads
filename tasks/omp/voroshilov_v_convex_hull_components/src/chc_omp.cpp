@@ -13,6 +13,7 @@ bool voroshilov_v_convex_hull_components_omp::ChcTaskOMP::ValidationImpl() {
   ptr = reinterpret_cast<int *>(task_data->inputs[1]);
   int width = *ptr;
   int pixels_size = static_cast<int>(task_data->inputs_count[0]);
+
   return height > 0 && width > 0 && (height * width) == pixels_size;
 }
 
